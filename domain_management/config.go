@@ -1,0 +1,20 @@
+package domain_management
+
+import (
+	"fmt"
+	"github.com/myklst/terraform-provider-domain-management/api"
+)
+
+type Config struct {
+	Endpoint string
+}
+
+func (c *Config) Client() (*api.Client, error) {
+	client, err := api.NewClient(c.Endpoint)
+
+	if err != nil {
+		return nil, fmt.Errorf("Error setting up client: %s", err)
+	}
+
+	return client, nil
+}

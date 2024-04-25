@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/myklst/terraform-provider-domain-management/api"
-	"github.com/myklst/terraform-provider-domain-management/structs"
 	"github.com/myklst/terraform-provider-domain-management/utils"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -22,6 +21,33 @@ import (
 
 func NewDomainAnnotationResource() resource.Resource {
 	return &domainAnnotationResource{}
+}
+
+type metadataConfigTF struct {
+	Annotations types.Dynamic `tfsdk:"annotations" json:"annotations"`
+}
+
+type metadataConfig struct {
+	Annotations map[string]interface{} `yaml:"annotations,omitempty" json:"annotations,omitempty" bson:"annotations,omitempty"`
+}
+
+func (m *metadataConfig) ConvertToStatefileDataType() (MetadataTF metadataConfigTF, diags diag.Diagnostics) {
+	annotations, annotationsDiags := utils.JSONToTerraformDynamicValue(m.Annotations)
+	diags.Append(annotationsDiags...)
+
+	if diags.HasError() {
+		return
+	}
+
+	MetadataTF = metadataConfigTF{
+		Annotations: annotations,
+	}
+
+	return
+}
+
+type annotationsMetadata struct {
+	Metadata metadataConfig `yaml:"metadata,omitempty" json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 
 type domainAnnotationResourceModel struct {
@@ -115,13 +141,17 @@ func (r *domainAnnotationResource) ImportState(ctx context.Context, req resource
 		return
 	}
 
-	var dbData structs.AnnotationsDefaultResponse
 	bytes, err := r.client.ReadAnnotations(imported.Domain, string(strAnnotation))
 	if resp.Diagnostics.HasError() {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
-	err = json.Unmarshal(bytes, &dbData)
+
+	var metadata struct {
+		Data annotationsMetadata `json:"dt"`
+	}
+
+	err = json.Unmarshal(bytes, &metadata)
 	if err != nil {
 		resp.Diagnostics.Append(diag.NewErrorDiagnostic(err.Error(), ""))
 		return
@@ -129,7 +159,7 @@ func (r *domainAnnotationResource) ImportState(ctx context.Context, req resource
 
 	// TODO Add warning for importing non existent keys it would be a no-op
 
-	annotationsMap, diags := utils.JSONToTerraformDynamicValue(imported.Annotations)
+	annotationsMap, diags := utils.JSONToTerraformDynamicValue(metadata.Data.Metadata.Annotations)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -187,7 +217,6 @@ func (r *domainAnnotationResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	var dataFromDb structs.AnnotationsDefaultResponse
 	payload, err := utils.TFTypesToBytes(reqState.Annotations.UnderlyingValue().(types.Object))
 	if err != nil {
 		resp.Diagnostics.Append(diag.NewErrorDiagnostic(err.Error(), ""))
@@ -200,13 +229,16 @@ func (r *domainAnnotationResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	err = json.Unmarshal(bytes, &dataFromDb)
+	var metadata struct {
+		Data annotationsMetadata `json:"dt"`
+	}
+	err = json.Unmarshal(bytes, &metadata)
 	if err != nil {
 		resp.Diagnostics.Append(diag.NewErrorDiagnostic(err.Error(), ""))
 		return
 	}
 
-	stateData, diags := utils.JSONToTerraformDynamicValue(dataFromDb.Data.Metadata.Annotations)
+	stateData, diags := utils.JSONToTerraformDynamicValue(metadata.Data.Metadata.Annotations)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

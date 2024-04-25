@@ -8,13 +8,41 @@ import (
 	"io"
 
 	"github.com/myklst/terraform-provider-domain-management/api"
-	"github.com/myklst/terraform-provider-domain-management/structs"
+	"github.com/myklst/terraform-provider-domain-management/utils"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
+
+type domainDataSourceModel struct {
+	DomainLabels      types.Dynamic `tfsdk:"domain_labels" json:"domain_labels"`
+	DomainTags        types.Dynamic `tfsdk:"domain_tags" json:"domain_tags"`
+	DomainAnnotations types.Dynamic `tfsdk:"domain_annotations" json:"domain_annotations"`
+	Domains           types.List    `tfsdk:"domains" json:"domains"`
+}
+
+func (d *domainDataSourceModel) Payload() (payload map[string]any) {
+	domains := map[string]any{}
+	if !d.DomainLabels.IsNull() {
+		domains["labels"] = utils.TFTypesToJSON(d.DomainLabels.UnderlyingValue().(basetypes.ObjectValue))
+	}
+
+	if !d.DomainTags.IsNull() {
+		domains["tags"] = utils.TFTypesToJSON(d.DomainTags.UnderlyingValue().(basetypes.ObjectValue))
+	}
+
+	if !d.DomainAnnotations.IsNull() {
+		domains["annotations"] = utils.TFTypesToJSON(d.DomainAnnotations.UnderlyingValue().(basetypes.ObjectValue))
+	}
+
+	payload = map[string]any{}
+	payload["domain_metadata"] = domains
+
+	return
+}
 
 func NewDomainDataSource() datasource.DataSource {
 	return &domainDataSource{}
@@ -73,7 +101,7 @@ func (d *domainDataSource) Configure(ctx context.Context, req datasource.Configu
 }
 
 func (d *domainDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state structs.DomainDataSourceModel
+	var state domainDataSourceModel
 
 	diags := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -89,7 +117,7 @@ func (d *domainDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	response, err := d.client.GetForTerraform(*bytes.NewBuffer(jsonData))
+	response, err := d.client.GetOnlyDomain(*bytes.NewBuffer(jsonData))
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read domains, got error: %s", err))
 		return
@@ -103,17 +131,16 @@ func (d *domainDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	var res structs.DomainsDefaultResponse
-	if err := json.Unmarshal(body, &res); err != nil {
+	var Respo struct {
+		Domains []string `json:"dt"`
+	}
+
+	if err := json.Unmarshal(body, &Respo); err != nil {
 		fmt.Println("Can not unmarshal JSON")
 		return
 	}
 
-	domainsStringArray := []string{}
-	for _, domain := range res.Data.Domains {
-		domainsStringArray = append(domainsStringArray, domain.Domain)
-	}
-	state.Domains, diags = types.ListValueFrom(ctx, types.StringType, domainsStringArray)
+	state.Domains, diags = types.ListValueFrom(ctx, types.StringType, Respo)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

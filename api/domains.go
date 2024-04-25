@@ -12,6 +12,7 @@ import (
 
 // TODO Decide on getForTerraform or get only domain API. choose one
 const (
+	GetOnlyDomain           = "%s/domain/onlydomain"
 	GetForTerraform         = "%s/domain/terraform"
 	DomainAnnotations       = "%s/domain/%s/annotations"
 	FullDomainsConfig       = "%s/domain/fulldomainsconfig"
@@ -103,8 +104,8 @@ func (c *Client) GetFullDomainsConfig(domain string) (res *http.Response, err er
 	return
 }
 
-func (c *Client) GetForTerraform(payload bytes.Buffer) (res *http.Response, err error) {
-	domainURL := fmt.Sprintf(GetForTerraform, c.Endpoint)
+func (c *Client) GetOnlyDomain(payload bytes.Buffer) (res *http.Response, err error) {
+	domainURL := fmt.Sprintf(GetOnlyDomain, c.Endpoint)
 
 	req, err := http.NewRequest(http.MethodGet, domainURL, &payload)
 	if err != nil {

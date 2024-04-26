@@ -17,14 +17,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-type domainDataSourceModel struct {
+type domainFilterDataSourceModel struct {
 	DomainLabels      types.Dynamic `tfsdk:"domain_labels" json:"domain_labels"`
 	DomainTags        types.Dynamic `tfsdk:"domain_tags" json:"domain_tags"`
 	DomainAnnotations types.Dynamic `tfsdk:"domain_annotations" json:"domain_annotations"`
 	Domains           types.List    `tfsdk:"domains" json:"domains"`
 }
 
-func (d *domainDataSourceModel) Payload() (payload map[string]any) {
+func (d *domainFilterDataSourceModel) Payload() (payload map[string]any) {
 	domains := map[string]any{}
 	if !d.DomainLabels.IsNull() {
 		domains["labels"] = utils.TFTypesToJSON(d.DomainLabels.UnderlyingValue().(basetypes.ObjectValue))
@@ -45,18 +45,18 @@ func (d *domainDataSourceModel) Payload() (payload map[string]any) {
 }
 
 func NewDomainDataSource() datasource.DataSource {
-	return &domainDataSource{}
+	return &domainFilterDataSource{}
 }
 
-type domainDataSource struct {
+type domainFilterDataSource struct {
 	client *api.Client
 }
 
-func (d *domainDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *domainFilterDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_domain_filter"
 }
 
-func (d *domainDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Query domains that satisfy the filter using Terraform Data Source",
 		Attributes: map[string]schema.Attribute{
@@ -80,7 +80,7 @@ func (d *domainDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 	}
 }
 
-func (d *domainDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *domainFilterDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -100,8 +100,8 @@ func (d *domainDataSource) Configure(ctx context.Context, req datasource.Configu
 	d.client = client
 }
 
-func (d *domainDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state domainDataSourceModel
+func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var state domainFilterDataSourceModel
 
 	diags := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)

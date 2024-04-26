@@ -121,7 +121,7 @@ func (r *domainAnnotationsResource) Schema(ctx context.Context, req resource.Sch
 }
 
 func (r *domainAnnotationsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	fmtlog(ctx, "[resourceDomainAnnotationImport!]")
+	tflog.Info(ctx, "[resourceDomainAnnotationImport!]")
 
 	type importStruct struct {
 		Domain      string         `tfsdk:"domain" json:"domain"`
@@ -175,7 +175,7 @@ func (r *domainAnnotationsResource) ImportState(ctx context.Context, req resourc
 }
 
 func (r *domainAnnotationsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	fmtlog(ctx, "[resourceDomainAnnotationCreate!]")
+	tflog.Info(ctx, "[resourceDomainAnnotationCreate!]")
 
 	var plan domainAnnotationResourceModel
 	getPlanDiags := req.Plan.Get(ctx, &plan)
@@ -208,7 +208,7 @@ func (r *domainAnnotationsResource) Create(ctx context.Context, req resource.Cre
 }
 
 func (r *domainAnnotationsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	fmtlog(ctx, "[resourceDomainAnnotationRead!]")
+	tflog.Info(ctx, "[resourceDomainAnnotationRead!]")
 
 	reqState := domainAnnotationResourceModel{}
 	getStateDiags := req.State.Get(ctx, &reqState)
@@ -256,7 +256,7 @@ func (r *domainAnnotationsResource) Read(ctx context.Context, req resource.ReadR
 }
 
 func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	fmtlog(ctx, "[resourceDomainAnnotationUpdate!]")
+	tflog.Info(ctx, "[resourceDomainAnnotationUpdate!]")
 
 	var plan *domainAnnotationResourceModel
 	getPlanDiags := req.Plan.Get(ctx, &plan)
@@ -358,7 +358,7 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 }
 
 func (r *domainAnnotationsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	fmtlog(ctx, "[resourceDomainAnnotationDelete!]")
+	tflog.Info(ctx, "[resourceDomainAnnotationDelete!]")
 
 	var state *domainAnnotationResourceModel
 	getStateDiags := req.State.Get(ctx, &state)
@@ -380,9 +380,4 @@ func (r *domainAnnotationsResource) Delete(ctx context.Context, req resource.Del
 	}
 
 	resp.State.RemoveResource(ctx)
-}
-
-func fmtlog(ctx context.Context, format string, a ...any) {
-	msg := fmt.Sprintf(format, a...)
-	tflog.Info(ctx, msg)
 }

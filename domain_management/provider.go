@@ -2,6 +2,7 @@ package domain_management
 
 import (
 	"context"
+	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/function"
@@ -36,7 +37,7 @@ func (p *DomainManagementProvider) Schema(ctx context.Context, req provider.Sche
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
-				MarkdownDescription: "The MongoDB endpoint",
+				MarkdownDescription: "The Domain Management server endpoint",
 				Required:            true,
 			},
 		},
@@ -44,24 +45,51 @@ func (p *DomainManagementProvider) Schema(ctx context.Context, req provider.Sche
 }
 
 func (p *DomainManagementProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var data DomainManagementProviderModel
+	var config DomainManagementProviderModel
+	diags := req.Config.Get(ctx, &config)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	// If practitioner provided a configuration value for any of the
+	// attributes, it must be a known value
+	if config.Endpoint.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("endpoint"),
+			"Provider endpoint cannot be unknown",
+			"",
+		)
+	}
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if data.Endpoint.IsUnknown() {
+	var (
+		endpoint string
+	)
+
+	if !config.Endpoint.IsNull() {
+		endpoint = config.Endpoint.ValueString()
+	} else {
+		endpoint = os.Getenv("DOMAIN_MANAGEMENT_ENDPOINT")
+	}
+
+	if endpoint == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("endpoint"),
-			"Unknown endpoint",
-			"",
+			"Missing Domain Management endpoint",
+			"The provider cannot create the Domain Management API client as there is a "+
+				"missing or empty value for the Domain Management endpoint. Set the "+
+				"endpoint value in the configuration or use the DOMAIN_MANAGEMENT_ENDPOINT "+
+				"environment variable. If either is already set, ensure the value "+
+				"is not empty.",
 		)
 	}
 
 	cfg := Config{
-		Endpoint: data.Endpoint.ValueString(),
+		Endpoint: endpoint,
 	}
 
 	client, err := cfg.Client()

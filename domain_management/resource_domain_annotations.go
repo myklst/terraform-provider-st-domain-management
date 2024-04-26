@@ -20,7 +20,7 @@ import (
 )
 
 func NewDomainAnnotationResource() resource.Resource {
-	return &domainAnnotationResource{}
+	return &domainAnnotationsResource{}
 }
 
 type metadataConfigTF struct {
@@ -75,15 +75,15 @@ func (r *domainAnnotationResourceModel) Payload() (bytes []byte, err error) {
 	return json.Marshal(mapJson)
 }
 
-type domainAnnotationResource struct {
+type domainAnnotationsResource struct {
 	client *api.Client
 }
 
-func (r *domainAnnotationResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *domainAnnotationsResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_domain_annotations"
 }
 
-func (r *domainAnnotationResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *domainAnnotationsResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -102,7 +102,7 @@ func (r *domainAnnotationResource) Configure(ctx context.Context, req resource.C
 	r.client = client
 }
 
-func (r *domainAnnotationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *domainAnnotationsResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Manage a domain's annotations using Terraform",
 		Attributes: map[string]schema.Attribute{
@@ -120,7 +120,7 @@ func (r *domainAnnotationResource) Schema(ctx context.Context, req resource.Sche
 	}
 }
 
-func (r *domainAnnotationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *domainAnnotationsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	fmtlog(ctx, "[resourceDomainAnnotationImport!]")
 
 	type importStruct struct {
@@ -174,7 +174,7 @@ func (r *domainAnnotationResource) ImportState(ctx context.Context, req resource
 	resp.State.SetAttribute(ctx, path.Root("annotations"), state.Annotations)
 }
 
-func (r *domainAnnotationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *domainAnnotationsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	fmtlog(ctx, "[resourceDomainAnnotationCreate!]")
 
 	var plan domainAnnotationResourceModel
@@ -207,7 +207,7 @@ func (r *domainAnnotationResource) Create(ctx context.Context, req resource.Crea
 	}
 }
 
-func (r *domainAnnotationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *domainAnnotationsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	fmtlog(ctx, "[resourceDomainAnnotationRead!]")
 
 	reqState := domainAnnotationResourceModel{}
@@ -255,7 +255,7 @@ func (r *domainAnnotationResource) Read(ctx context.Context, req resource.ReadRe
 	}
 }
 
-func (r *domainAnnotationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	fmtlog(ctx, "[resourceDomainAnnotationUpdate!]")
 
 	var plan *domainAnnotationResourceModel
@@ -357,7 +357,7 @@ func (r *domainAnnotationResource) Update(ctx context.Context, req resource.Upda
 	}
 }
 
-func (r *domainAnnotationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *domainAnnotationsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	fmtlog(ctx, "[resourceDomainAnnotationDelete!]")
 
 	var state *domainAnnotationResourceModel

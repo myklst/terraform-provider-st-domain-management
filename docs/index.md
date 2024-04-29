@@ -31,4 +31,4 @@ provider "domain-management" {
 
 ### Required
 
-- `endpoint` (String) The MongoDB endpoint
+- `endpoint` (String) The Domain Management server endpoint

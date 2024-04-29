@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/myklst/terraform-provider-domain-management/domain_management"
 	"log"
 	"os"
-	"github.com/myklst/terraform-provider-domain-management/domain_management"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )

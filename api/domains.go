@@ -16,9 +16,12 @@ const (
 )
 
 func (c *Client) CreateAnnotations(domain string, payload []byte) (resp []byte, err error) {
-	domainURL := fmt.Sprintf(DomainAnnotations, c.Endpoint, domain)
+	url, err := url.Parse(fmt.Sprintf(DomainAnnotations, c.Endpoint, domain))
+	if err != nil {
+		return nil, err
+	}
 
-	req, err := http.NewRequest(http.MethodPost, domainURL, bytes.NewBuffer(payload))
+	req, err := http.NewRequest(http.MethodPost, url.String(), bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -36,10 +39,17 @@ func (c *Client) CreateAnnotations(domain string, payload []byte) (resp []byte, 
 	return nil, nil
 }
 
-func (c *Client) ReadAnnotations(domain string, payload string) (resp []byte, err error) {
-	domainURL := fmt.Sprintf(DomainAnnotations, c.Endpoint, domain)
+func (c *Client) ReadAnnotations(domain string, payload []byte) (resp []byte, err error) {
+	url, err := url.Parse(fmt.Sprintf(DomainAnnotations, c.Endpoint, domain))
+	if err != nil {
+		return nil, err
+	}
 
-	req, err := http.NewRequest(http.MethodGet, domainURL, bytes.NewBufferString(payload))
+	q := url.Query()
+	q.Set("filter", string(payload))
+	url.RawQuery = q.Encode()
+
+	req, err := http.NewRequest(http.MethodGet, url.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -53,9 +63,12 @@ func (c *Client) ReadAnnotations(domain string, payload string) (resp []byte, er
 }
 
 func (c *Client) UpdateAnnotations(domain string, payload []byte) (resp []byte, err error) {
-	domainURL := fmt.Sprintf(DomainAnnotations, c.Endpoint, domain)
+	url, err := url.Parse(fmt.Sprintf(DomainAnnotations, c.Endpoint, domain))
+	if err != nil {
+		return nil, err
+	}
 
-	req, err := http.NewRequest(http.MethodPatch, domainURL, bytes.NewBuffer(payload))
+	req, err := http.NewRequest(http.MethodPatch, url.String(), bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -70,9 +83,16 @@ func (c *Client) UpdateAnnotations(domain string, payload []byte) (resp []byte, 
 }
 
 func (c *Client) DeleteAnnotations(domain string, payload []byte) error {
-	domainURL := fmt.Sprintf(DomainAnnotations, c.Endpoint, domain)
+	url, err := url.Parse(fmt.Sprintf(DomainAnnotations, c.Endpoint, domain))
+	if err != nil {
+		return err
+	}
 
-	req, err := http.NewRequest(http.MethodDelete, domainURL, bytes.NewBuffer(payload))
+	q := url.Query()
+	q.Set("filter", string(payload))
+	url.RawQuery = q.Encode()
+
+	req, err := http.NewRequest(http.MethodDelete, url.String(), nil)
 	if err != nil {
 		return err
 	}
@@ -84,10 +104,22 @@ func (c *Client) DeleteAnnotations(domain string, payload []byte) error {
 	return nil
 }
 
-func (c *Client) GetOnlyDomain(payload bytes.Buffer) (res *http.Response, err error) {
-	domainURL := fmt.Sprintf(GetOnlyDomain, c.Endpoint)
+func (c *Client) GetOnlyDomain(payload []byte) (res *http.Response, err error) {
+	url, err := url.Parse(fmt.Sprintf(GetOnlyDomain, c.Endpoint))
+	if err != nil {
+		return nil, err
+	}
 
-	req, err := http.NewRequest(http.MethodGet, domainURL, &payload)
+	q := url.Query()
+	q.Set("filter", string(payload))
+	url.RawQuery = q.Encode()
+
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, url.String(), nil)
+
 	if err != nil {
 		return &http.Response{}, err
 	}

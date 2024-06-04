@@ -6,17 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
-	"strings"
 )
 
-// TODO Decide on getForTerraform or get only domain API. choose one
 const (
-	GetOnlyDomain           = "%s/domain/onlydomain"
-	GetForTerraform         = "%s/domain/terraform"
-	DomainAnnotations       = "%s/domain/%s/annotations"
-	FullDomainsConfig       = "%s/domain/fulldomainsconfig"
-	DomainAnnotationsDelete = "%s/domain/%s/annotations/delete"
+	GetOnlyDomain     = "%s/domains/fqdn"
+	DomainAnnotations = "%s/domains/%s/annotations"
 )
 
 func (c *Client) CreateAnnotations(domain string, payload []byte) (resp []byte, err error) {
@@ -86,22 +82,6 @@ func (c *Client) DeleteAnnotations(domain string, payload []byte) error {
 	}
 
 	return nil
-}
-
-func (c *Client) GetFullDomainsConfig(domain string) (res *http.Response, err error) {
-	domainURL := fmt.Sprintf(FullDomainsConfig, c.Endpoint)
-	domainFilter := fmt.Sprintf(`{"domain":"%s"}`, domain)
-
-	req, err := http.NewRequest(http.MethodGet, domainURL, strings.NewReader(domainFilter))
-	if err != nil {
-		return &http.Response{}, err
-	}
-
-	if res, err = c.execute(req); err != nil {
-		return &http.Response{}, err
-	}
-
-	return
 }
 
 func (c *Client) GetOnlyDomain(payload bytes.Buffer) (res *http.Response, err error) {

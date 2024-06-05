@@ -4,13 +4,13 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/wI2L/jsondiff"
+	"gomodules.xyz/jsonpatch/v2"
 )
 
 type UpdateOperations struct {
-	Create map[string]jsondiff.Operation
-	Update map[string]jsondiff.Operation
-	Delete map[string]jsondiff.Operation
+	Create map[string]jsonpatch.Operation
+	Update map[string]jsonpatch.Operation
+	Delete map[string]jsonpatch.Operation
 }
 
 // Calculates the diff between state and plan objects. The output of this
@@ -24,16 +24,16 @@ type UpdateOperations struct {
 //  4. Values inside the jsondiff.Operation are discarded and disregarded.
 //  5. Only the paths are important.
 //  6. It is considered a root key if the path contains only one slash "/xxx"
-func JSONDiffToTerraformOperations(state, plan map[string]any) (UpdateOperations, error) {
-	patch, err := jsondiff.Compare(state, plan)
+func JSONDiffToTerraformOperations(state, plan []byte) (UpdateOperations, error) {
+	patch, err := jsonpatch.CreatePatch(state, plan)
 	if err != nil {
 		return UpdateOperations{}, err
 	}
 
 	op := UpdateOperations{
-		Create: map[string]jsondiff.Operation{},
-		Update: map[string]jsondiff.Operation{},
-		Delete: map[string]jsondiff.Operation{},
+		Create: map[string]jsonpatch.Operation{},
+		Update: map[string]jsonpatch.Operation{},
+		Delete: map[string]jsonpatch.Operation{},
 	}
 	for _, v := range patch {
 
@@ -44,31 +44,31 @@ func JSONDiffToTerraformOperations(state, plan map[string]any) (UpdateOperations
 		array := strings.Split(strings.Trim(v.Path, "/"), "/")
 		if len(array) > 1 {
 			finalPath := ProcessString(array[0])
-			operation := jsondiff.Operation{}
+			operation := jsonpatch.Operation{}
 			op.Update[finalPath] = operation
 		}
 
 		// If length is one, then it is considered a root key
 		if len(array) == 1 {
 			v.Path = ProcessString(array[0])
-			switch v.Type {
-			case jsondiff.OperationAdd:
+			switch v.Operation {
+			case "add":
 				{
 					op.Create[v.Path] = v
 				}
-			case jsondiff.OperationRemove:
+			case "remove":
 				{
 					op.Delete[v.Path] = v
 				}
-			case jsondiff.OperationCopy:
+			case "copy":
 				{
 					return UpdateOperations{}, errors.New("JsonDiff OperationCopy not supported")
 				}
-			case jsondiff.OperationMove:
+			case "move":
 				{
 					return UpdateOperations{}, errors.New("JsonDiff OperationMove not supported")
 				}
-			case jsondiff.OperationReplace:
+			case "replace":
 				{
 					op.Update[v.Path] = v
 				}

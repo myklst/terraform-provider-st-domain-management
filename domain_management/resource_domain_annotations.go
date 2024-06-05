@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"golang.org/x/exp/maps"
+
 	"github.com/myklst/terraform-provider-domain-management/api"
 	"github.com/myklst/terraform-provider-domain-management/utils"
 
@@ -135,13 +137,13 @@ func (r *domainAnnotationsResource) ImportState(ctx context.Context, req resourc
 		return
 	}
 
-	strAnnotation, err := json.Marshal(imported.Annotations)
+	strAnnotation, err := json.Marshal(maps.Keys(imported.Annotations))
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
-	bytes, err := r.client.ReadAnnotations(imported.Domain, string(strAnnotation))
+	bytes, err := r.client.ReadAnnotations(imported.Domain, strAnnotation)
 	if resp.Diagnostics.HasError() {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -217,13 +219,14 @@ func (r *domainAnnotationsResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	payload, err := utils.TFTypesToBytes(reqState.Annotations.UnderlyingValue().(types.Object))
+	annotations := maps.Keys(reqState.Annotations.UnderlyingValue().(types.Object).Attributes())
+	payload, err := json.Marshal(annotations)
 	if err != nil {
 		resp.Diagnostics.Append(diag.NewErrorDiagnostic(err.Error(), ""))
 		return
 	}
 
-	bytes, err := r.client.ReadAnnotations(reqState.Domain.ValueString(), string(payload))
+	bytes, err := r.client.ReadAnnotations(reqState.Domain.ValueString(), payload)
 	if err != nil {
 		resp.Diagnostics.Append(diag.NewErrorDiagnostic(err.Error(), ""))
 		return
@@ -272,11 +275,23 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	planObj := utils.TFTypesToJSON(plan.Annotations.UnderlyingValue().(types.Object))
-	stateObj := utils.TFTypesToJSON(state.Annotations.UnderlyingValue().(types.Object))
+	planTFObj := plan.Annotations.UnderlyingValue().(types.Object)
+	stateTFObj := state.Annotations.UnderlyingValue().(types.Object)
+
+	planObj := utils.TFTypesToJSON(planTFObj)
+	stateObj := utils.TFTypesToJSON(stateTFObj)
+
+	var err error
+	var planBytes, stateBytes []byte
+	if planBytes, err = utils.TFTypesToBytes(planTFObj); err != nil {
+		resp.Diagnostics.AddError("Cannot unmarshal TF object", err.Error())
+	}
+	if stateBytes, err = utils.TFTypesToBytes(stateTFObj); err != nil {
+		resp.Diagnostics.AddError("Cannot unmarshal TF object", err.Error())
+	}
 
 	// Get the diff between plan Annotations and state Annotations
-	updateOp, diffError := utils.JSONDiffToTerraformOperations(stateObj, planObj)
+	updateOp, diffError := utils.JSONDiffToTerraformOperations(planBytes, stateBytes)
 	if diffError != nil {
 		resp.Diagnostics.AddError("JSON Diff Error", diffError.Error())
 		return
@@ -305,9 +320,9 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 
 	// handle key deletion
 	if len(updateOp.Delete) > 0 {
-		deletePayload := map[string]any{}
+		deletePayload := []string{}
 		for _, v := range updateOp.Delete {
-			deletePayload[v.Path] = planObj[v.Path]
+			deletePayload = append(deletePayload, v.Path)
 			delete(stateObj, v.Path)
 		}
 		payload, err := json.Marshal(deletePayload)

@@ -87,7 +87,7 @@ func formatURL(base string) (string, error) {
 		finalPath = fmt.Sprintf("%s/%s", finalPath, endpoint.Path)
 	}
 
-	return fmt.Sprintf("%s://%s", endpoint.Scheme, endpoint.Host), err
+	return finalPath, err
 }
 
 func (c *Client) execute(req *http.Request) (resp *http.Response, err error) {

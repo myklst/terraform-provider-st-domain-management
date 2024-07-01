@@ -291,7 +291,7 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 	}
 
 	// Get the diff between plan Annotations and state Annotations
-	updateOp, diffError := utils.JSONDiffToTerraformOperations(planBytes, stateBytes)
+	updateOp, diffError := utils.JSONDiffToTerraformOperations(stateBytes, planBytes)
 	if diffError != nil {
 		resp.Diagnostics.AddError("JSON Diff Error", diffError.Error())
 		return

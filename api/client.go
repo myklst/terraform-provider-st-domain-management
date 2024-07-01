@@ -79,12 +79,12 @@ func formatURL(base string) (string, error) {
 	}
 
 	var finalPath string
-	finalPath = fmt.Sprintf("%s://%s/%s", endpoint.Scheme, endpoint.Host, endpoint.Path)
+	finalPath = fmt.Sprintf("%s://%s", endpoint.Scheme, endpoint.Host)
 
 	// Some endpoints may have an extra path
 	// Check for the existence of a path in
 	if endpoint.Path != "" {
-		finalPath = fmt.Sprintf("%s/%s", finalPath, endpoint.Path)
+		finalPath = fmt.Sprintf("%s%s", finalPath, endpoint.Path)
 	}
 
 	return finalPath, err

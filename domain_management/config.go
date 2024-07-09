@@ -13,7 +13,7 @@ func (c *Config) Client() (*api.Client, error) {
 	client, err := api.NewClient(c.Endpoint)
 
 	if err != nil {
-		return nil, fmt.Errorf("Error setting up client: %s", err)
+		return nil, fmt.Errorf("error setting up client: %s", err)
 	}
 
 	return client, nil

@@ -17,10 +17,6 @@ data "domain-management_domain_filter" "example" {
   domain_labels = {
     "common/status" = "new"
   }
-  domain_tags = {
-    brand   = "pg"
-    country = "default"
-  }
 }
 ```
 
@@ -31,7 +27,6 @@ data "domain-management_domain_filter" "example" {
 
 - `domain_annotations` (Dynamic)
 - `domain_labels` (Dynamic)
-- `domain_tags` (Dynamic)
 
 ### Read-Only
 

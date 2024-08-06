@@ -38,7 +38,7 @@ func (p *DomainManagementProvider) Schema(ctx context.Context, req provider.Sche
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
 				MarkdownDescription: "The Domain Management server endpoint",
-				Required:            true,
+				Optional:            true,
 			},
 		},
 	}

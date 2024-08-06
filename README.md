@@ -116,7 +116,7 @@ resource "..." "example" {
   }
 }
 ```
-4. If root key exists, further `Create` reqest of the same key will fail.
+4. If root key exists, further `Create` request of the same key will fail.
 5. `Update` is used to update the entire right hand side of a key.
 6. `Update` cannot be used on a non-existent root key.
 7. In Terraform's update lifecycle, root keys may be created, updated or deleted.
@@ -127,4 +127,30 @@ resource "..." "example" {
 - **domain-management_domain_filter**
 
 	This resource is desgined to filter domains based on key value, namely filter by labels and / or filter by tags. This data source returns a
-	list of string of domain names for further use in `domain-management_domain_annotations`.
+	list of string of domain names for further use in `domain-management_domain_annotations`. For example, the following will return all domains that contains the three labels.
+
+```terraform
+data "domain-management_domain_filter" "example" {
+  domain_labels = {
+    "common/brand"   = "sige"
+    "common/env"     = "test"
+    "common/project" = "devops"
+  }
+}
+```
+
+  The output of the data_source is a Terraform List, which can then be used in a for_each loop
+
+```terrraform
+resource "domain-management_domain_annotations" "example" {
+  for_each = {
+    for index, value in data.domain-management_domain_filter.example.domains :
+    value => value
+  }
+
+  domain = each.value
+  annotations = {
+    "a" = "b"
+  }
+}
+```

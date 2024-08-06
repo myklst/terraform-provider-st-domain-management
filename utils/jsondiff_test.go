@@ -22,18 +22,8 @@ import (
 func TestCreateNewRoot(t *testing.T) {
 	plan := json.RawMessage(`{"annotationA": "Hello", "annotationB": 69, "annotationC/annotationD": {"annotationE":"Bye"}, "annotationF":"newValue"}`)
 	state := json.RawMessage(`{"annotationA": "Hello", "annotationB": 69, "annotationC/annotationD": {"annotationE":"Bye"}}`)
-	var stateMapOfString map[string]any
-	var planMapOfString map[string]any
 
-	if err := json.Unmarshal(state, &stateMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	if err := json.Unmarshal(plan, &planMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	test, err := JSONDiffToTerraformOperations(stateMapOfString, planMapOfString)
+	test, err := JSONDiffToTerraformOperations(state, plan)
 	if err != nil {
 		t.Error(err)
 	}
@@ -51,18 +41,8 @@ func TestCreateNewRoot(t *testing.T) {
 func TestDeleteExistingRoot(t *testing.T) {
 	plan := json.RawMessage(`{"annotationA": "Hello", "annotationB": 69}`)
 	state := json.RawMessage(`{"annotationA": "Hello", "annotationB": 69, "annotationC/annotationD": {"annotationE":"Bye"}}`)
-	var stateMapOfString map[string]any
-	var planMapOfString map[string]any
 
-	if err := json.Unmarshal(state, &stateMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	if err := json.Unmarshal(plan, &planMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	test, err := JSONDiffToTerraformOperations(stateMapOfString, planMapOfString)
+	test, err := JSONDiffToTerraformOperations(state, plan)
 	if err != nil {
 		t.Error(err)
 	}
@@ -80,18 +60,8 @@ func TestDeleteExistingRoot(t *testing.T) {
 func TestUpdateExistingRootValue(t *testing.T) {
 	plan := json.RawMessage(`{"annotationA": "Hello", "annotationB": 70, "annotationC/annotationD": {"annotationE":"Bye"}}`)
 	state := json.RawMessage(`{"annotationA": "Hello", "annotationB": 69, "annotationC/annotationD": {"annotationE":"Bye"}}`)
-	var stateMapOfString map[string]any
-	var planMapOfString map[string]any
 
-	if err := json.Unmarshal(state, &stateMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	if err := json.Unmarshal(plan, &planMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	test, err := JSONDiffToTerraformOperations(stateMapOfString, planMapOfString)
+	test, err := JSONDiffToTerraformOperations(state, plan)
 	if err != nil {
 		t.Error(err)
 	}
@@ -109,18 +79,8 @@ func TestUpdateExistingRootValue(t *testing.T) {
 func TestModifyKeyAtRoot(t *testing.T) {
 	plan := json.RawMessage(`{"annotationG": "Hello", "annotationB": 69, "annotationC/annotationD": {"annotationE":"Bye"}}`)
 	state := json.RawMessage(`{"annotationA": "Hello", "annotationB": 69, "annotationC/annotationD": {"annotationE":"Bye"}}`)
-	var stateMapOfString map[string]any
-	var planMapOfString map[string]any
 
-	if err := json.Unmarshal(state, &stateMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	if err := json.Unmarshal(plan, &planMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	test, err := JSONDiffToTerraformOperations(stateMapOfString, planMapOfString)
+	test, err := JSONDiffToTerraformOperations(state, plan)
 	if err != nil {
 		t.Error(err)
 	}
@@ -142,18 +102,8 @@ func TestModifyKeyAtRoot(t *testing.T) {
 func TestCreateNewKeyInNestedPath(t *testing.T) {
 	plan := json.RawMessage(`{"annotationA": "Hello", "annotationB": 69, "annotationC/annotationD": {"annotationE":"Bye", "annotationH":"World"}}`)
 	state := json.RawMessage(`{"annotationA": "Hello", "annotationB": 69, "annotationC/annotationD": {"annotationE":"Bye"}}`)
-	var stateMapOfString map[string]any
-	var planMapOfString map[string]any
 
-	if err := json.Unmarshal(state, &stateMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	if err := json.Unmarshal(plan, &planMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	test, err := JSONDiffToTerraformOperations(stateMapOfString, planMapOfString)
+	test, err := JSONDiffToTerraformOperations(state, plan)
 	if err != nil {
 		t.Error(err)
 	}
@@ -171,18 +121,8 @@ func TestCreateNewKeyInNestedPath(t *testing.T) {
 func TestRemoveKeyInNestedPath(t *testing.T) {
 	plan := json.RawMessage(`{"annotationA": "Hello", "annotationB": 69, "annotationC/annotationD": {}}`)
 	state := json.RawMessage(`{"annotationA": "Hello", "annotationB": 69, "annotationC/annotationD": {"annotationE":"Bye"}}`)
-	var stateMapOfString map[string]any
-	var planMapOfString map[string]any
 
-	if err := json.Unmarshal(state, &stateMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	if err := json.Unmarshal(plan, &planMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	test, err := JSONDiffToTerraformOperations(stateMapOfString, planMapOfString)
+	test, err := JSONDiffToTerraformOperations(state, plan)
 	if err != nil {
 		t.Error(err)
 	}
@@ -200,18 +140,8 @@ func TestRemoveKeyInNestedPath(t *testing.T) {
 func TestModifyValueInNestedPath(t *testing.T) {
 	plan := json.RawMessage(`{"annotationA": "Hello", "annotationB": 69, "annotationC/annotationD": {"annotationE":"Welcome Back"}}`)
 	state := json.RawMessage(`{"annotationA": "Hello", "annotationB": 69, "annotationC/annotationD": {"annotationE":"Bye"}}`)
-	var stateMapOfString map[string]any
-	var planMapOfString map[string]any
 
-	if err := json.Unmarshal(state, &stateMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	if err := json.Unmarshal(plan, &planMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	test, err := JSONDiffToTerraformOperations(stateMapOfString, planMapOfString)
+	test, err := JSONDiffToTerraformOperations(state, plan)
 	if err != nil {
 		t.Error(err)
 	}
@@ -229,18 +159,8 @@ func TestModifyValueInNestedPath(t *testing.T) {
 func TestPathAdhereToRFC6902(t *testing.T) {
 	plan := json.RawMessage(`{"annotationA": "Hello", "annotationB": 69, "annotationB~1annotationC~/annotationD": {"annotationE":"Welcome Back"}}`)
 	state := json.RawMessage(`{"annotationA": "Hello", "annotationB": 69, "annotationC/annotationD": {"annotationE":"Bye"}}`)
-	var stateMapOfString map[string]any
-	var planMapOfString map[string]any
 
-	if err := json.Unmarshal(state, &stateMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	if err := json.Unmarshal(plan, &planMapOfString); err != nil {
-		t.Error(err)
-	}
-
-	test, err := JSONDiffToTerraformOperations(stateMapOfString, planMapOfString)
+	test, err := JSONDiffToTerraformOperations(state, plan)
 	if err != nil {
 		t.Error(err)
 	}

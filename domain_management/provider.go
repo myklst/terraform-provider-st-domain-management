@@ -86,6 +86,7 @@ func (p *DomainManagementProvider) Configure(ctx context.Context, req provider.C
 				"environment variable. If either is already set, ensure the value "+
 				"is not empty.",
 		)
+		return
 	}
 
 	cfg := Config{

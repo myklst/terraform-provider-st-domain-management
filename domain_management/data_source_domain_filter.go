@@ -9,29 +9,37 @@ import (
 	"strconv"
 
 	"github.com/myklst/terraform-provider-domain-management/api"
-	"github.com/myklst/terraform-provider-domain-management/utils"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 type domainFilterDataSourceModel struct {
-	DomainLabels      types.Dynamic `tfsdk:"domain_labels" json:"domain_labels"`
-	DomainAnnotations types.Dynamic `tfsdk:"domain_annotations" json:"domain_annotations"`
-	Domains           types.List    `tfsdk:"domains" json:"domains"`
+	DomainLabels      jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
+	DomainAnnotations jsontypes.Normalized `tfsdk:"domain_annotations" json:"domain_annotations"`
+	Domains           types.List           `tfsdk:"domains" json:"domains"`
 }
 
 func (d *domainFilterDataSourceModel) Payload() (payload map[string]any) {
 	domains := map[string]any{}
-	if !d.DomainLabels.IsNull() {
-		domains["labels"] = utils.TFTypesToJSON(d.DomainLabels.UnderlyingValue().(basetypes.ObjectValue))
+	labels := map[string]any{}
+	annotations := map[string]any{}
+
+	err := d.DomainLabels.Unmarshal(&labels)
+	if err != nil {
+		panic(err)
 	}
+	domains["labels"] = labels
 
 	if !d.DomainAnnotations.IsNull() {
-		domains["annotations"] = utils.TFTypesToJSON(d.DomainAnnotations.UnderlyingValue().(basetypes.ObjectValue))
+		err := d.DomainAnnotations.Unmarshal(&annotations)
+		if err != nil {
+			panic(err)
+		}
+		domains["annotations"] = annotations
 	}
 
 	payload = map[string]any{}
@@ -57,16 +65,19 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 		Description: "Query domains that satisfy the filter using Terraform Data Source",
 		Attributes: map[string]schema.Attribute{
 			"domains": schema.ListAttribute{
+				Description: "List of domain names that match the given filter.",
 				ElementType: types.StringType,
 				Computed:    true,
 			},
-			"domain_labels": schema.DynamicAttribute{
-				Required: false,
-				Optional: true,
+			"domain_labels": schema.StringAttribute{
+				Description: "Labels filter. Only domains that contain these labels will be returned as data source output.",
+				CustomType:  jsontypes.NormalizedType{},
+				Required:    true,
 			},
-			"domain_annotations": schema.DynamicAttribute{
-				Required: false,
-				Optional: true,
+			"domain_annotations": schema.StringAttribute{
+				Description: "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
+				CustomType:  jsontypes.NormalizedType{},
+				Optional:    true,
 			},
 		},
 	}
@@ -117,7 +128,21 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		resp.Diagnostics.AddError("HTTP Error", fmt.Sprintf("Got response %s: %s", strconv.Itoa(response.StatusCode), response.Body))
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			resp.Diagnostics.AddError("Read response Error", err.Error())
+			return
+		}
+
+		jsonBody := map[string]interface{}{}
+		err = json.Unmarshal(body, &jsonBody)
+		if err != nil {
+			resp.Diagnostics.AddError("JSON Unmarshal Error", err.Error())
+			return
+		}
+
+		resp.Diagnostics.AddError("HTTP Error", fmt.Sprintf("Got response %s: %s", strconv.Itoa(response.StatusCode), jsonBody["err"]))
+		return
 	}
 
 	body, err := io.ReadAll(response.Body)

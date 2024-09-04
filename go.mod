@@ -3,9 +3,9 @@ module github.com/myklst/terraform-provider-domain-management
 go 1.19
 
 require (
-	github.com/google/go-cmp v0.6.0
 	github.com/hashicorp/terraform-plugin-docs v0.18.0
 	github.com/hashicorp/terraform-plugin-framework v1.8.0
+	github.com/hashicorp/terraform-plugin-framework-jsontypes v0.1.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
 	gomodules.xyz/jsonpatch/v2 v2.4.0

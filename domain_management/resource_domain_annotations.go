@@ -330,9 +330,9 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 			resp.Diagnostics.AddError("JSON Marshal Error", err.Error())
 			return
 		}
-		err = r.client.DeleteAnnotations(state.Domain.ValueString(), payload)
+		httpResp, err := r.client.DeleteAnnotations(state.Domain.ValueString(), payload)
 		if err != nil {
-			resp.Diagnostics.AddWarning("Update Annotation: Delete Key Error: ", err.Error())
+			resp.Diagnostics.AddWarning("Update Annotation: Delete Key Error: ", string(httpResp))
 		} else {
 			setStateDiags := resp.State.Set(ctx, state)
 			resp.Diagnostics.Append(setStateDiags...)
@@ -386,11 +386,35 @@ func (r *domainAnnotationsResource) Delete(ctx context.Context, req resource.Del
 	payload, payloadErr := state.Payload()
 	if payloadErr != nil {
 		resp.Diagnostics.AddError("Payload Error", payloadErr.Error())
+		return
 	}
 
-	err := r.client.DeleteAnnotations(state.Domain.ValueString(), payload)
+	// The payload is a json object with keys and values. For annotation deletion, we only need an array of keys.
+	keys := func(payload []byte) []byte {
+		jsonObj := map[string]interface{}{}
+
+		err := json.Unmarshal(payload, &jsonObj)
+		if err != nil {
+			resp.Diagnostics.AddError("JSON Unmarshal Error", err.Error())
+			return nil
+		}
+
+		keys, err := json.Marshal(maps.Keys(jsonObj))
+		if err != nil {
+			resp.Diagnostics.AddError("JSON Marshal Error", err.Error())
+			return nil
+		}
+
+		return keys
+	}(payload)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	httpResp, err := r.client.DeleteAnnotations(state.Domain.ValueString(), keys)
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete annotations for domain, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete annotations for domain, got error %s: %s", err, string(httpResp)))
 		return
 	}
 

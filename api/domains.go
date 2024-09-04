@@ -82,10 +82,10 @@ func (c *Client) UpdateAnnotations(domain string, payload []byte) (resp []byte, 
 	return nil, nil
 }
 
-func (c *Client) DeleteAnnotations(domain string, payload []byte) error {
+func (c *Client) DeleteAnnotations(domain string, payload []byte) (resp []byte, err error) {
 	url, err := url.Parse(fmt.Sprintf(DomainAnnotations, c.Endpoint, domain))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	q := url.Query()
@@ -94,14 +94,21 @@ func (c *Client) DeleteAnnotations(domain string, payload []byte) error {
 
 	req, err := http.NewRequest(http.MethodDelete, url.String(), nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if _, err = c.execute(req); err != nil {
-		return err
+	httpResponse, err := c.execute(req)
+	if err != nil {
+		return []byte(fmt.Sprintf("Client HTTP Error %s", err.Error())), err
 	}
 
-	return nil
+	defer httpResponse.Body.Close()
+	body, _ := io.ReadAll(httpResponse.Body)
+
+	if httpResponse.StatusCode >= 400 {
+		return body, errors.New(strconv.Itoa(httpResponse.StatusCode))
+	}
+	return body, nil
 }
 
 func (c *Client) GetOnlyDomain(payload []byte) (res *http.Response, err error) {
@@ -121,7 +128,7 @@ func (c *Client) GetOnlyDomain(payload []byte) (res *http.Response, err error) {
 	req, err := http.NewRequest(http.MethodGet, url.String(), nil)
 
 	if err != nil {
-		return &http.Response{}, err
+		return nil, err
 	}
 
 	if res, err = c.execute(req); err != nil {

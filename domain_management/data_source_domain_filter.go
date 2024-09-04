@@ -117,7 +117,26 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		resp.Diagnostics.AddError("HTTP Error", fmt.Sprintf("Got response %s: %s", strconv.Itoa(response.StatusCode), response.Body))
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			resp.Diagnostics.AddError("Read response Error", err.Error())
+			return
+		}
+
+		jsonBody := map[string]interface{}{}
+		err = json.Unmarshal(body, &jsonBody)
+		if err != nil {
+			resp.Diagnostics.AddError("JSON Unmarshal Error", err.Error())
+			return
+		}
+
+		if response.StatusCode == http.StatusBadRequest && jsonBody["err"] == "no such domains" {
+			resp.Diagnostics.AddWarning("GET Domains Error", fmt.Sprint(jsonBody["err"]))
+			return
+		}
+
+		resp.Diagnostics.AddError("HTTP Error", fmt.Sprintf("Got response %s: %s", strconv.Itoa(response.StatusCode), jsonBody["err"]))
+		return
 	}
 
 	body, err := io.ReadAll(response.Body)

@@ -15,7 +15,7 @@ Manage a domain's annotations using Terraform
 ```terraform
 resource "domain-management_domain_annotations" "example" {
   domain = "example.xyz"
-  annotations = {
+  annotations = jsonencode({
     "top-level/module-specific/annotations" = {
       numberExample = 69
       floatExample  = 69.69
@@ -42,7 +42,7 @@ resource "domain-management_domain_annotations" "example" {
         },
       ])
     }
-  }
+  })
 }
 ```
 
@@ -51,5 +51,5 @@ resource "domain-management_domain_annotations" "example" {
 
 ### Required
 
-- `annotations` (Dynamic)
+- `annotations` (String) JSON formatted string of key value pairs to record to this domain. Use terraform's built in jsonencode() function.
 - `domain` (String) The domain name to add annotations

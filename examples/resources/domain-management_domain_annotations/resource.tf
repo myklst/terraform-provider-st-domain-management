@@ -1,6 +1,6 @@
 resource "domain-management_domain_annotations" "example" {
   domain = "example.xyz"
-  annotations = {
+  annotations = jsonencode({
     "top-level/module-specific/annotations" = {
       numberExample = 69
       floatExample  = 69.69
@@ -27,5 +27,5 @@ resource "domain-management_domain_annotations" "example" {
         },
       ])
     }
-  }
+  })
 }

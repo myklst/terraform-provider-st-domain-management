@@ -82,9 +82,9 @@ func (r *domainAnnotationsResource) Schema(ctx context.Context, req resource.Sch
 				},
 			},
 			"annotations": schema.StringAttribute{
-				CustomType: jsontypes.NormalizedType{},
+				CustomType:  jsontypes.NormalizedType{},
 				Description: "JSON formatted string of key value pairs to record to this domain. Use terraform's built in jsonencode() function.",
-				Required:   true,
+				Required:    true,
 			},
 		},
 	}

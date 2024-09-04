@@ -71,13 +71,13 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 			},
 			"domain_labels": schema.StringAttribute{
 				Description: "Labels filter. Only domains that contain these labels will be returned as data source output.",
-				CustomType: jsontypes.NormalizedType{},
-				Required:   true,
+				CustomType:  jsontypes.NormalizedType{},
+				Required:    true,
 			},
 			"domain_annotations": schema.StringAttribute{
 				Description: "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
-				CustomType: jsontypes.NormalizedType{},
-				Optional:   true,
+				CustomType:  jsontypes.NormalizedType{},
+				Optional:    true,
 			},
 		},
 	}

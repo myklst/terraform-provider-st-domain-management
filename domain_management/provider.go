@@ -29,7 +29,7 @@ func New() provider.Provider {
 }
 
 func (p *DomainManagementProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "domain-management"
+	resp.TypeName = "st-domain-management"
 	resp.Version = p.version
 }
 

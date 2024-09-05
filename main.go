@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/myklst/terraform-provider-domain-management/domain_management"
+	"github.com/myklst/terraform-provider-st-domain-management/domain_management"
 	"log"
 	"os"
 
@@ -37,7 +37,7 @@ func main() {
 
 	providerAddress := os.Getenv("PROVIDER_LOCAL_PATH")
 	if providerAddress == "" {
-		providerAddress = "registry.terraform.io/myklst/domain-management"
+		providerAddress = "registry.terraform.io/myklst/st-domain-management"
 	}
 
 	opts := providerserver.ServeOpts{

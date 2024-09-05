@@ -6,14 +6,14 @@ testacc:
 	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 120m
 
 # The name of Terraform custom provider.
-CUSTOM_PROVIDER_NAME ?= terraform-provider-domain-management
+CUSTOM_PROVIDER_NAME ?= terraform-provider-st-domain-management
 # The url of Terraform provider.
-CUSTOM_PROVIDER_URL ?= example.local/myklst/domain-management
+CUSTOM_PROVIDER_URL ?= example.local/myklst/st-domain-management
 
 UNAME := $(shell uname)
 
-.PHONY: install-local-domain-management
-install-local-domain-management: linux_amd64
+.PHONY: install-local-st-domain-management
+install-local-st-domain-management: linux_amd64
 
 linux_amd64:
 ifneq ($(UNAME), Linux)

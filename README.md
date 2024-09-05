@@ -26,13 +26,13 @@ Local Installation
     ```
     terraform {
       required_providers {
-        domain-management = {
-          source = "example.local/myklst/domain-management"
+        st-domain-management = {
+          source = "example.local/myklst/st-domain-management"
         }
       }
     }
 
-    provider "domain-management" {
+    provider "st-domain-management" {
       url = "http://localhost:10800
     }
     ```
@@ -130,27 +130,27 @@ resource "..." "example" {
 	list of string of domain names for further use in `domain-management_domain_annotations`. For example, the following will return all domains that contains the three labels.
 
 ```terraform
-data "domain-management_domain_filter" "example" {
-  domain_labels = {
+data "st-domain-management_domain_filter" "example" {
+  domain_labels = jsonencode({
     "common/brand"   = "sige"
     "common/env"     = "test"
     "common/project" = "devops"
-  }
+  })
 }
 ```
 
   The output of the data_source is a Terraform List, which can then be used in a for_each loop
 
 ```terrraform
-resource "domain-management_domain_annotations" "example" {
+resource "st-domain-management_domain_annotations" "example" {
   for_each = {
     for index, value in data.domain-management_domain_filter.example.domains :
     value => value
   }
 
   domain = each.value
-  annotations = {
+  annotations = jsonencode({
     "a" = "b"
-  }
+  })
 }
 ```

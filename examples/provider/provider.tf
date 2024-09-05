@@ -1,11 +1,11 @@
 terraform {
   required_providers {
-    domain-management = {
-      source = "myklst/domain-management"
+    st-domain-management = {
+      source = "myklst/st-domain-management"
     }
   }
 }
 
-provider "domain-management" {
+provider "st-domain-management" {
   endpoint = "http://localhost:10800"
 }

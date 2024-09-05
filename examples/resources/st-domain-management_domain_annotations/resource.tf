@@ -1,4 +1,4 @@
-resource "domain-management_domain_annotations" "example" {
+resource "st-domain-management_domain_annotations" "example" {
   domain = "example.xyz"
   annotations = jsonencode({
     "top-level/module-specific/annotations" = {

@@ -19,7 +19,7 @@ Requirements
 Local Installation
 ------------------
 
-1. Run make file `make install-local-domain-management` to install the provider under ~/.terraform.d/plugins.
+1. Run make file `make install-local-st-domain-management` to install the provider under ~/.terraform.d/plugins.
 
 2. The provider source should be change to the path that configured in the *Makefile*:
 
@@ -38,7 +38,7 @@ Local Installation
     ```
 
 ## Resources
-- **domain-management_domain_annotations**
+- **st-domain-management_domain_annotations**
 
 	This resource is desgined to accept a domain name, and a Dynamic Terraform Object with a `JSON` like syntax, which will be assigned as annotations to the domain.
 
@@ -124,10 +124,10 @@ resource "..." "example" {
 
 
 ## Data Sources
-- **domain-management_domain_filter**
+- **st-domain-management_domain_filter**
 
 	This resource is desgined to filter domains based on key value, namely filter by labels and / or filter by tags. This data source returns a
-	list of string of domain names for further use in `domain-management_domain_annotations`. For example, the following will return all domains that contains the three labels.
+	list of string of domain names for further use in `st-domain-management_domain_annotations`. For example, the following will return all domains that contains the three labels.
 
 ```terraform
 data "st-domain-management_domain_filter" "example" {
@@ -144,7 +144,7 @@ data "st-domain-management_domain_filter" "example" {
 ```terrraform
 resource "st-domain-management_domain_annotations" "example" {
   for_each = {
-    for index, value in data.domain-management_domain_filter.example.domains :
+    for index, value in data.st-domain-management_domain_filter.example.domains :
     value => value
   }
 

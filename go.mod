@@ -1,4 +1,4 @@
-module github.com/myklst/terraform-provider-domain-management
+module github.com/myklst/terraform-provider-st-domain-management
 
 go 1.19
 

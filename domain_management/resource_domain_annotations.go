@@ -8,8 +8,8 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"github.com/myklst/terraform-provider-domain-management/api"
-	"github.com/myklst/terraform-provider-domain-management/utils"
+	"github.com/myklst/terraform-provider-st-domain-management/api"
+	"github.com/myklst/terraform-provider-st-domain-management/utils"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"

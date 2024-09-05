@@ -19,26 +19,26 @@ Requirements
 Local Installation
 ------------------
 
-1. Run make file `make install-local-domain-management` to install the provider under ~/.terraform.d/plugins.
+1. Run make file `make install-local-st-domain-management` to install the provider under ~/.terraform.d/plugins.
 
 2. The provider source should be change to the path that configured in the *Makefile*:
 
     ```
     terraform {
       required_providers {
-        domain-management = {
-          source = "example.local/myklst/domain-management"
+        st-domain-management = {
+          source = "example.local/myklst/st-domain-management"
         }
       }
     }
 
-    provider "domain-management" {
+    provider "st-domain-management" {
       url = "http://localhost:10800
     }
     ```
 
 ## Resources
-- **domain-management_domain_annotations**
+- **st-domain-management_domain_annotations**
 
 	This resource is desgined to accept a domain name, and a Dynamic Terraform Object with a `JSON` like syntax, which will be assigned as annotations to the domain.
 
@@ -124,33 +124,33 @@ resource "..." "example" {
 
 
 ## Data Sources
-- **domain-management_domain_filter**
+- **st-domain-management_domain_filter**
 
 	This resource is desgined to filter domains based on key value, namely filter by labels and / or filter by tags. This data source returns a
-	list of string of domain names for further use in `domain-management_domain_annotations`. For example, the following will return all domains that contains the three labels.
+	list of string of domain names for further use in `st-domain-management_domain_annotations`. For example, the following will return all domains that contains the three labels.
 
 ```terraform
-data "domain-management_domain_filter" "example" {
-  domain_labels = {
+data "st-domain-management_domain_filter" "example" {
+  domain_labels = jsonencode({
     "common/brand"   = "sige"
     "common/env"     = "test"
     "common/project" = "devops"
-  }
+  })
 }
 ```
 
   The output of the data_source is a Terraform List, which can then be used in a for_each loop
 
 ```terrraform
-resource "domain-management_domain_annotations" "example" {
+resource "st-domain-management_domain_annotations" "example" {
   for_each = {
-    for index, value in data.domain-management_domain_filter.example.domains :
+    for index, value in data.st-domain-management_domain_filter.example.domains :
     value => value
   }
 
   domain = each.value
-  annotations = {
+  annotations = jsonencode({
     "a" = "b"
-  }
+  })
 }
 ```

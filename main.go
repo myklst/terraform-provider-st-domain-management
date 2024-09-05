@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/myklst/terraform-provider-domain-management/domain_management"
+	"github.com/myklst/terraform-provider-st-domain-management/domain_management"
 	"log"
 	"os"
 
@@ -18,7 +18,7 @@ import (
 
 // Run the docs generation tool, check its repository for more information on how it works and how docs
 // can be customized.
-//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate -provider-name domain-management
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate -provider-name st-domain-management
 
 var (
 	// these will be set by the goreleaser configuration
@@ -37,7 +37,7 @@ func main() {
 
 	providerAddress := os.Getenv("PROVIDER_LOCAL_PATH")
 	if providerAddress == "" {
-		providerAddress = "registry.terraform.io/myklst/domain-management"
+		providerAddress = "registry.terraform.io/myklst/st-domain-management"
 	}
 
 	opts := providerserver.ServeOpts{

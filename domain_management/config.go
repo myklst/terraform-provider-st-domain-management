@@ -2,7 +2,7 @@ package domain_management
 
 import (
 	"fmt"
-	"github.com/myklst/terraform-provider-domain-management/api"
+	"github.com/myklst/terraform-provider-st-domain-management/api"
 )
 
 type Config struct {

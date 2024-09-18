@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -85,6 +86,9 @@ func (r *domainAnnotationsResource) Schema(ctx context.Context, req resource.Sch
 				CustomType:  jsontypes.NormalizedType{},
 				Description: "JSON formatted string of key value pairs to record to this domain. Suitable to use with terraform's built in jsonencode() function.",
 				Required:    true,
+				Validators: []validator.String{
+					mustBeMapOfString{},
+				},
 			},
 		},
 	}
@@ -381,4 +385,30 @@ func (r *domainAnnotationsResource) Delete(ctx context.Context, req resource.Del
 	}
 
 	resp.State.RemoveResource(ctx)
+}
+
+type mustBeMapOfString struct {
+}
+
+func (v mustBeMapOfString) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	var jsonObj map[string]interface{}
+
+	unquoted, err := strconv.Unquote(req.ConfigValue.String())
+	if err != nil {
+		resp.Diagnostics.AddError("String unquote error", err.Error())
+	}
+
+	err = json.Unmarshal([]byte(unquoted), &jsonObj)
+	if err != nil {
+		resp.Diagnostics.AddError("Must be key value pair. Key must be of string type.", err.Error())
+		return
+	}
+}
+
+func (v mustBeMapOfString) Description(_ context.Context) string {
+	return fmt.Sprintf("Annotations must be a key value pair. Key must be of type string")
+}
+
+func (v mustBeMapOfString) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
 }

@@ -164,11 +164,7 @@ func (r *domainAnnotationsResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	state := domainAnnotationResourceModel{
-		Domain:      plan.Domain,
-		Annotations: plan.Annotations,
-	}
-
+	state := plan
 	setStateDiags := resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(setStateDiags...)
 	if resp.Diagnostics.HasError() {
@@ -183,6 +179,14 @@ func (r *domainAnnotationsResource) Read(ctx context.Context, req resource.ReadR
 	getStateDiags := req.State.Get(ctx, &reqState)
 	resp.Diagnostics.Append(getStateDiags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// If the annotation is removed outside of Terraform
+	// and state refresh is performed, the annotation may be null.
+	// If annotations is indeed null, return early 
+	// as there is nothing to do.
+	if reqState.Annotations.IsNull() {
 		return
 	}
 
@@ -214,15 +218,19 @@ func (r *domainAnnotationsResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
+	respState := domainAnnotationResourceModel{
+		Domain: reqState.Domain,
+	}
+
+	if len(metadata.Data.Metadata.Annotations) == 0 {
+		respState.Annotations = jsontypes.NewNormalizedNull()
+	} else {
 	jsonStr, err := json.Marshal(metadata.Data.Metadata.Annotations)
 	if err != nil {
 		resp.Diagnostics.Append(diag.NewErrorDiagnostic(err.Error(), ""))
 		return
 	}
-
-	respState := domainAnnotationResourceModel{
-		Domain:      reqState.Domain,
-		Annotations: jsontypes.Normalized{StringValue: types.StringValue(string(jsonStr))},
+		respState.Annotations = jsontypes.Normalized{StringValue: types.StringValue(string(jsonStr))}
 	}
 	setStateDiags := resp.State.Set(ctx, respState)
 	resp.Diagnostics.Append(setStateDiags...)
@@ -257,7 +265,10 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
+	if !state.Annotations.IsNull() {
 	diags = state.Annotations.Unmarshal(&stateObj)
+	}
+
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -269,10 +280,15 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	stateString, err := strconv.Unquote(state.Annotations.String())
+	var stateString string
+	if !state.Annotations.IsNull() {
+		stateString, err = strconv.Unquote(state.Annotations.String())
 	if err != nil {
 		resp.Diagnostics.AddError("Strings Unquote Error", err.Error())
 		return
+		}
+	} else {
+		stateString = string(json.RawMessage(`{}`))
 	}
 
 	// Get the diff between plan Annotations and state Annotations
@@ -296,7 +312,8 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 		}
 		httpResp, err := r.client.CreateAnnotations(state.Domain.ValueString(), payload)
 		if err != nil {
-			resp.Diagnostics.AddWarning("Update Annotation: Create New Key Error: ", string(httpResp))
+			resp.Diagnostics.AddError("Update Annotation: Create New Key Error: ", string(httpResp))
+			return
 		} else {
 			setStateDiags := resp.State.Set(ctx, state)
 			resp.Diagnostics.Append(setStateDiags...)
@@ -317,7 +334,8 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 		}
 		httpResp, err := r.client.DeleteAnnotations(state.Domain.ValueString(), payload)
 		if err != nil {
-			resp.Diagnostics.AddWarning("Update Annotation: Delete Key Error: ", string(httpResp))
+			resp.Diagnostics.AddError("Update Annotation: Delete Key Error: ", string(httpResp))
+			return
 		} else {
 			setStateDiags := resp.State.Set(ctx, state)
 			resp.Diagnostics.Append(setStateDiags...)
@@ -336,21 +354,19 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 			resp.Diagnostics.AddError("JSON Marshal Error", err.Error())
 			return
 		}
-		_, err = r.client.UpdateAnnotations(state.Domain.ValueString(), payload)
+		httpResp, err := r.client.UpdateAnnotations(state.Domain.ValueString(), payload)
 		if err != nil {
-			resp.Diagnostics.AddWarning("Update Annotation: Update Key Error: ", err.Error())
+			resp.Diagnostics.AddError("Update Annotation: Update Key Error: ", string(httpResp))
+			return
 		} else {
 			setStateDiags := resp.State.Set(ctx, state)
 			resp.Diagnostics.Append(setStateDiags...)
 		}
 	}
 
-	state2 := domainAnnotationResourceModel{
-		Domain:      plan.Domain,
-		Annotations: plan.Annotations,
-	}
+	finalState := plan
 
-	setStateDiags := resp.State.Set(ctx, state2)
+	setStateDiags := resp.State.Set(ctx, finalState)
 	resp.Diagnostics.Append(setStateDiags...)
 	if resp.Diagnostics.HasError() {
 		return

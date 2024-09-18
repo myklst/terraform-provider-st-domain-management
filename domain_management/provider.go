@@ -112,6 +112,7 @@ func (p *DomainManagementProvider) Resources(_ context.Context) []func() resourc
 func (p *DomainManagementProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewDomainDataSource,
+		NewSubdomainDataSource,
 	}
 }
 

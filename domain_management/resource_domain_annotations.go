@@ -184,7 +184,7 @@ func (r *domainAnnotationsResource) Read(ctx context.Context, req resource.ReadR
 
 	// If the annotation is removed outside of Terraform
 	// and state refresh is performed, the annotation may be null.
-	// If annotations is indeed null, return early 
+	// If annotations is indeed null, return early
 	// as there is nothing to do.
 	if reqState.Annotations.IsNull() {
 		return
@@ -225,11 +225,11 @@ func (r *domainAnnotationsResource) Read(ctx context.Context, req resource.ReadR
 	if len(metadata.Data.Metadata.Annotations) == 0 {
 		respState.Annotations = jsontypes.NewNormalizedNull()
 	} else {
-	jsonStr, err := json.Marshal(metadata.Data.Metadata.Annotations)
-	if err != nil {
-		resp.Diagnostics.Append(diag.NewErrorDiagnostic(err.Error(), ""))
-		return
-	}
+		jsonStr, err := json.Marshal(metadata.Data.Metadata.Annotations)
+		if err != nil {
+			resp.Diagnostics.Append(diag.NewErrorDiagnostic(err.Error(), ""))
+			return
+		}
 		respState.Annotations = jsontypes.Normalized{StringValue: types.StringValue(string(jsonStr))}
 	}
 	setStateDiags := resp.State.Set(ctx, respState)
@@ -266,7 +266,7 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 	}
 
 	if !state.Annotations.IsNull() {
-	diags = state.Annotations.Unmarshal(&stateObj)
+		diags = state.Annotations.Unmarshal(&stateObj)
 	}
 
 	resp.Diagnostics.Append(diags...)
@@ -283,9 +283,9 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 	var stateString string
 	if !state.Annotations.IsNull() {
 		stateString, err = strconv.Unquote(state.Annotations.String())
-	if err != nil {
-		resp.Diagnostics.AddError("Strings Unquote Error", err.Error())
-		return
+		if err != nil {
+			resp.Diagnostics.AddError("Strings Unquote Error", err.Error())
+			return
 		}
 	} else {
 		stateString = string(json.RawMessage(`{}`))
@@ -381,6 +381,15 @@ func (r *domainAnnotationsResource) Delete(ctx context.Context, req resource.Del
 
 	resp.Diagnostics.Append(getStateDiags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// There is a chance that the annotation may be deleted outside of Terraform
+	// Upon the next refresh cycle, the annotations result may be null.
+	// If it is indeed null, just remove the resource from state.
+	// There is nothing else to do to
+	if state.Annotations.IsNull() {
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

@@ -9,10 +9,12 @@ import (
 	"strconv"
 
 	"github.com/myklst/terraform-provider-st-domain-management/api"
+	"github.com/myklst/terraform-provider-st-domain-management/utils"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -73,11 +75,19 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 				Description: "Labels filter. Only domains that contain these labels will be returned as data source output.",
 				CustomType:  jsontypes.NormalizedType{},
 				Required:    true,
+				Validators: []validator.String{
+					utils.MustBeMapOfString{},
+					utils.MustNotBeNull{},
+				},
 			},
 			"domain_annotations": schema.StringAttribute{
 				Description: "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
 				CustomType:  jsontypes.NormalizedType{},
 				Optional:    true,
+				Validators: []validator.String{
+					utils.MustBeMapOfString{},
+					utils.MustNotBeNull{},
+				},
 			},
 		},
 	}

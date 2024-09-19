@@ -93,12 +93,12 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 	resp.Schema = schema.Schema{
 		Description: "Query domains that satisfy the filter using Terraform Data Source",
 		Attributes: map[string]schema.Attribute{
-			"domains": schema.ListAttribute{
+			"domains": schema.SetAttribute{
 				Description: "List of domain names that match the given filter.",
 				ElementType: basetypes.ObjectType{
 					AttrTypes: map[string]attr.Type{
 						"domain": types.StringType,
-						"subdomains": types.ListType{
+						"subdomains": types.SetType{
 							ElemType: basetypes.ObjectType{
 								AttrTypes: map[string]attr.Type{
 									"name":   types.StringType,

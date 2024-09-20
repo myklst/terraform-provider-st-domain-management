@@ -3,12 +3,12 @@
 page_title: "st-domain-management_domain_filter Data Source - terraform-provider-st-domain-management"
 subcategory: ""
 description: |-
-  Query domains that satisfy the filter using Terraform Data Source
+  Query domains that satisfy the filter using Terraform Data Source.
 ---
 
 # st-domain-management_domain_filter (Data Source)
 
-Query domains that satisfy the filter using Terraform Data Source
+Query domains that satisfy the filter using Terraform Data Source.
 
 ## Example Usage
 
@@ -35,4 +35,4 @@ data "st-domain-management_domain_filter" "example" {
 
 ### Read-Only
 
-- `domains` (List of String) List of domain names that match the given filter.
+- `domains` (Set of String) Set of domain names that match the given filter.

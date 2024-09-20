@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -64,7 +65,7 @@ func (d *domainFilterDataSource) Metadata(ctx context.Context, req datasource.Me
 
 func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Query domains that satisfy the filter using Terraform Data Source",
+		Description: "Query domains that satisfy the filter using Terraform Data Source.",
 		Attributes: map[string]schema.Attribute{
 			"domains": schema.SetAttribute{
 				Description: "Set of domain names that match the given filter.",

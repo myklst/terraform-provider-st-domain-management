@@ -101,13 +101,13 @@ func (d *subdomainFilterDataSource) Metadata(ctx context.Context, req datasource
 
 func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Query subdomains that satisfy the filter using Terraform Data Source",
+		Description: "Query subdomains that satisfy the filter using Terraform Data Source.",
 		Attributes: map[string]schema.Attribute{
 			"domains": schema.SetNestedAttribute{
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"domain": schema.StringAttribute{
-							Description: "The main domain of this result",
+							Description: "The main domain of this result.",
 							Computed:    true,
 						},
 						"subdomains": schema.SetNestedAttribute{
@@ -123,8 +123,8 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 									},
 									"labels": schema.StringAttribute{
 										CustomType: jsontypes.NormalizedType{},
-										Description: "The JSON encoded string of the labels attachd to this subdomain." +
-											"Wrap this resource in jsonencode() to use it as a Terraform resource",
+										Description: "The JSON encoded string of the labels attachd to this subdomain. " +
+											"Wrap this resource in jsonencode() to use it as a Terraform resource.",
 										Computed: true,
 									},
 								},

@@ -13,13 +13,11 @@ import (
 	"github.com/myklst/terraform-provider-st-domain-management/utils"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 type metadata struct {
@@ -54,7 +52,7 @@ type domain struct {
 type subdomainFilterDataSourceModel struct {
 	DomainLabels      jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
 	DomainAnnotations jsontypes.Normalized `tfsdk:"domain_annotations" json:"domain_annotations"`
-	SubdomainLabels   jsontypes.Normalized `tfsdk:"subdomains_labels" json:"subdomains_labels"`
+	SubdomainLabels   jsontypes.Normalized `tfsdk:"subdomain_labels" json:"subdomains_labels"`
 	Domains           []domain             `tfsdk:"domains" json:"domains"`
 }
 
@@ -105,19 +103,33 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 	resp.Schema = schema.Schema{
 		Description: "Query subdomains that satisfy the filter using Terraform Data Source",
 		Attributes: map[string]schema.Attribute{
-			"domains": schema.SetAttribute{
-				Description: "Set of domain names that match the given filter.",
-				ElementType: basetypes.ObjectType{
-					AttrTypes: map[string]attr.Type{
-						"domain": types.StringType,
-						"subdomains": types.SetType{
-							ElemType: basetypes.ObjectType{
-								AttrTypes: map[string]attr.Type{
-									"name":   types.StringType,
-									"fqdn":   types.StringType,
-									"labels": jsontypes.NormalizedType{},
+			"domains": schema.SetNestedAttribute{
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"domain": schema.StringAttribute{
+							Description: "The main domain of this result",
+							Computed:    true,
+						},
+						"subdomains": schema.SetNestedAttribute{
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"name": schema.StringAttribute{
+										Description: "The name of subdomain.",
+										Computed:    true,
+									},
+									"fqdn": schema.StringAttribute{
+										Description: "The result of joining the subdomain name with the main domain.",
+										Computed:    true,
+									},
+									"labels": schema.StringAttribute{
+										CustomType: jsontypes.NormalizedType{},
+										Description: "The JSON encoded string of the labels attachd to this subdomain." +
+											"Wrap this resource in jsonencode() to use it as a Terraform resource",
+										Computed: true,
+									},
 								},
 							},
+							Computed: true,
 						},
 					},
 				},
@@ -141,7 +153,7 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 					utils.MustNotBeNull{},
 				},
 			},
-			"subdomains_labels": schema.StringAttribute{
+			"subdomain_labels": schema.StringAttribute{
 				Description: "Subdomain labels filter. Only subdomains that contain these labels will be returned as data source output",
 				CustomType:  jsontypes.NormalizedType{},
 				Required:    true,

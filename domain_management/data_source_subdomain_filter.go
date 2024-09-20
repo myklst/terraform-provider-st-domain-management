@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"strconv"
 
 	"github.com/myklst/terraform-provider-st-domain-management/api"
@@ -15,66 +16,77 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-type Metadata struct {
+type metadata struct {
 	Labels map[string]interface{} `json:"labels"`
 }
 
-type SubdomainFull struct {
+type subdomainFull struct {
 	Name     string   `json:"name"`
-	Metadata Metadata `json:"metadata"`
+	Metadata metadata `json:"metadata"`
 }
 
-type DomainFullResp struct {
+type domainFullResp struct {
 	Domain     string          `json:"domain"`
-	Subdomains []SubdomainFull `json:"subdomains"`
+	Subdomains []subdomainFull `json:"subdomains"`
 }
 
-type Subdomain struct {
+type domainsArray struct {
+	Domains []domainFullResp `json:"dt"`
+}
+
+type subdomain struct {
 	Name   types.String         `tfsdk:"name" json:"name"`
 	Fqdn   types.String         `tfsdk:"fqdn" json:"fqdn"`
 	Labels jsontypes.Normalized `tfsdk:"labels" json:"labels"`
 }
 
-type Domain struct {
+type domain struct {
 	Domain     types.String `tfsdk:"domain" json:"domain"`
-	Subdomains []Subdomain  `tfsdk:"subdomains" json:"subdomains"`
+	Subdomains []subdomain  `tfsdk:"subdomains" json:"subdomains"`
 }
 
 type subdomainFilterDataSourceModel struct {
 	DomainLabels      jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
 	DomainAnnotations jsontypes.Normalized `tfsdk:"domain_annotations" json:"domain_annotations"`
-	Domains           []Domain             `tfsdk:"domains" json:"domains"`
+	SubdomainLabels   jsontypes.Normalized `tfsdk:"subdomains_labels" json:"subdomains_labels"`
+	Domains           []domain             `tfsdk:"domains" json:"domains"`
 }
 
-func (d *subdomainFilterDataSourceModel) Payload() (payload map[string]any) {
+func (d *subdomainFilterDataSourceModel) Payload() ([]byte, diag.Diagnostics) {
 	domains := map[string]any{}
 	labels := map[string]any{}
 	annotations := map[string]any{}
 
-	err := d.DomainLabels.Unmarshal(&labels)
-	if err != nil {
-		panic(err)
+	diags := d.DomainLabels.Unmarshal(&labels)
+	if diags.HasError() {
+		return nil, diags
 	}
 	domains["labels"] = labels
 
 	if !d.DomainAnnotations.IsNull() {
-		err := d.DomainAnnotations.Unmarshal(&annotations)
-		if err != nil {
-			panic(err)
+		diags = d.DomainAnnotations.Unmarshal(&annotations)
+		if diags.HasError() {
+			return nil, diags
 		}
 		domains["annotations"] = annotations
 	}
 
-	payload = map[string]any{}
+	payload := map[string]any{}
 	payload["metadata"] = domains
 
-	return
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		diags.AddError("Cannot marshal payload. ", err.Error())
+		return nil, diags
+	}
+
+	return payloadBytes, nil
 }
 
 func NewSubdomainDataSource() datasource.DataSource {
@@ -86,7 +98,7 @@ type subdomainFilterDataSource struct {
 }
 
 func (d *subdomainFilterDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_domain_filter_subdomains"
+	resp.TypeName = req.ProviderTypeName + "_subdomain_filter"
 }
 
 func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
@@ -112,7 +124,7 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 				Computed: true,
 			},
 			"domain_labels": schema.StringAttribute{
-				Description: "Labels filter. Only domains that contain these labels will be returned as data source output.",
+				Description: "Domain labels filter. Only domains that contain these labels will be returned as data source output.",
 				CustomType:  jsontypes.NormalizedType{},
 				Required:    true,
 				Validators: []validator.String{
@@ -124,6 +136,15 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 				Description: "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
 				CustomType:  jsontypes.NormalizedType{},
 				Optional:    true,
+				Validators: []validator.String{
+					utils.MustBeMapOfString{},
+					utils.MustNotBeNull{},
+				},
+			},
+			"subdomains_labels": schema.StringAttribute{
+				Description: "Subdomain labels filter. Only subdomains that contain these labels will be returned as data source output",
+				CustomType:  jsontypes.NormalizedType{},
+				Required:    true,
 				Validators: []validator.String{
 					utils.MustBeMapOfString{},
 					utils.MustNotBeNull{},
@@ -158,19 +179,16 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 
 	diags := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	payload := state.Payload()
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
+	payload, diags := state.Payload()
+	if diags.HasError() {
 		return
 	}
 
-	response, err := d.client.GetDomainsFull(jsonData)
+	response, err := d.client.GetDomainsFull(payload)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read domains, got error: %s", err))
 		return
@@ -202,54 +220,96 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
-	type domains struct {
-		Domains []DomainFullResp `json:"dt"`
-	}
-
-	var dom domains
-
-	if err := json.Unmarshal(body, &dom); err != nil {
+	var domains domainsArray
+	if err := json.Unmarshal(body, &domains); err != nil {
 		resp.Diagnostics.AddError("Cannot unmarshal JSON", err.Error())
 		return
 	}
 
-	if resp.Diagnostics.HasError() {
+	for _, element := range domains.Domains {
+		filterLabels, err := strconv.Unquote(state.SubdomainLabels.String())
+		if err != nil {
+			resp.Diagnostics.AddError("String Unquote Error: ", err.Error())
+			return
+		}
+
+		convertedDomain, err := element.convertToTerraform(filterLabels)
+		if err != nil {
+			resp.Diagnostics.AddError("Error occured while converting api response to Terraform struct.", err.Error())
+			return
+		}
+
+		if convertedDomain != nil {
+			state.Domains = append(state.Domains, *convertedDomain)
+		}
+	}
+
+	if len(state.Domains) == 0 {
+		resp.Diagnostics.AddError("No subdomains found. Please try again with the correct domain and subdomain label filters.", "")
 		return
 	}
 
-	tflog.Trace(ctx, "Done reading domain data source")
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
 
-	for _, element := range dom.Domains {
-		domain := types.StringValue(element.Domain)
-		subdomains := func() []Subdomain {
-			if element.Subdomains == nil {
-				return nil
-			}
+// Converts a domain response from the API into a domain for Terraform
+func (d *domainFullResp) convertToTerraform(subdomainLabels string) (*domain, error) {
+	subdomains := []subdomain{}
 
-			subdomainsTF := []Subdomain{}
-			for _, v := range element.Subdomains {
-				sub := Subdomain{}
-				sub.Fqdn = types.StringValue(fmt.Sprintf("%s.%s", v.Name, element.Domain))
-				sub.Name = types.StringValue(v.Name)
+	for _, subdomain := range d.Subdomains {
+		a, err := subdomain.convertToTerraformSubdomain(d.Domain, subdomainLabels)
+		if err != nil {
+			return nil, err
+		}
 
-				if v.Metadata.Labels == nil {
-					sub.Labels = jsontypes.NewNormalizedNull()
-				} else {
-					labelString, _ := json.Marshal(v.Metadata.Labels)
-					sub.Labels = jsontypes.NewNormalizedValue(string(labelString))
-				}
-				subdomainsTF = append(subdomainsTF, sub)
-			}
-
-			return subdomainsTF
-		}()
-
-		state.Domains = append(state.Domains, Domain{
-			Domain:     domain,
-			Subdomains: subdomains,
-		})
+		if a != nil {
+			subdomains = append(subdomains, *a)
+		}
 	}
 
-	// Save data into Terraform state
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if len(subdomains) == 0 {
+		return nil, nil
+	}
+
+	return &domain{
+		Domain:     types.StringValue(d.Domain),
+		Subdomains: subdomains,
+	}, nil
+}
+
+// Converts a subdomain response from the API into a subdomain for Terraform
+func (s *subdomainFull) convertToTerraformSubdomain(domain string, subdomainLabelsFilter string) (*subdomain, error) {
+	filter := map[string]interface{}{}
+	err := json.Unmarshal([]byte(subdomainLabelsFilter), &filter)
+	if err != nil {
+		return nil, err
+	}
+
+	stringJson, err := json.Marshal(s.Metadata.Labels)
+	if err != nil {
+		return nil, err
+	}
+
+	// To determine whether the subdomain subdomain labels satisfies the data source filter,
+	// a three step process is performed.
+	// 1. Extract the map keys from the data source
+	// 2. Use the same map keys to filter the map[string] from
+	// 3. Ensure that the map[string] from data source and the map[string]
+	//    from api response is the same
+	apiResponse := map[string]interface{}{}
+	for k := range filter {
+		apiResponse[k] = s.Metadata.Labels[k]
+	}
+
+	// Return nil if subdomain labels filter's map contents (data source user input)
+	// is not found in the subdomain from the api response
+	if !reflect.DeepEqual(filter, apiResponse) {
+		return nil, nil
+	}
+
+	return &subdomain{
+		Name:   types.StringValue(s.Name),
+		Fqdn:   types.StringValue(fmt.Sprintf("%s.%s", s.Name, domain)),
+		Labels: jsontypes.NewNormalizedValue(string(stringJson)),
+	}, nil
 }

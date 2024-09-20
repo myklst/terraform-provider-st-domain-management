@@ -151,7 +151,8 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 			return
 		}
 
-		resp.Diagnostics.AddError("HTTP Error", fmt.Sprintf("Got response %s: %s", strconv.Itoa(response.StatusCode), jsonBody["err"]))
+		resp.Diagnostics.AddError("No domains found. Please try again with the correct domain label filters.",
+			fmt.Sprintf("Got response %s: %s", strconv.Itoa(response.StatusCode), jsonBody["err"]))
 		return
 	}
 

@@ -18,16 +18,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func NewDomainAnnotationResource() resource.Resource {
 	return &domainAnnotationsResource{}
-}
-
-type metadataConfigTF struct {
-	Annotations jsontypes.NormalizedType `tfsdk:"annotations" json:"annotations"`
 }
 
 type metadataConfig struct {
@@ -85,6 +82,10 @@ func (r *domainAnnotationsResource) Schema(ctx context.Context, req resource.Sch
 				CustomType:  jsontypes.NormalizedType{},
 				Description: "JSON formatted string of key value pairs to record to this domain. Suitable to use with terraform's built in jsonencode() function.",
 				Required:    true,
+				Validators: []validator.String{
+					utils.MustBeMapOfString{},
+					utils.MustNotBeNull{},
+				},
 			},
 		},
 	}
@@ -128,6 +129,9 @@ func (r *domainAnnotationsResource) ImportState(ctx context.Context, req resourc
 	}
 
 	jsonStr, err := json.Marshal(metadata.Data.Metadata.Annotations)
+	if err != nil {
+		resp.Diagnostics.AddError("JSON Marshal Error", err.Error())
+	}
 
 	state := domainAnnotationResourceModel{
 		Domain:      types.StringValue(imported.Domain),
@@ -160,11 +164,7 @@ func (r *domainAnnotationsResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	state := domainAnnotationResourceModel{
-		Domain:      plan.Domain,
-		Annotations: plan.Annotations,
-	}
-
+	state := plan
 	setStateDiags := resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(setStateDiags...)
 	if resp.Diagnostics.HasError() {
@@ -179,6 +179,14 @@ func (r *domainAnnotationsResource) Read(ctx context.Context, req resource.ReadR
 	getStateDiags := req.State.Get(ctx, &reqState)
 	resp.Diagnostics.Append(getStateDiags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// If the annotation is removed outside of Terraform
+	// and state refresh is performed, the annotation may be null.
+	// If annotations is indeed null, return early
+	// as there is nothing to do.
+	if reqState.Annotations.IsNull() {
 		return
 	}
 
@@ -210,15 +218,19 @@ func (r *domainAnnotationsResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	jsonStr, err := json.Marshal(metadata.Data.Metadata.Annotations)
-	if err != nil {
-		resp.Diagnostics.Append(diag.NewErrorDiagnostic(err.Error(), ""))
-		return
+	respState := domainAnnotationResourceModel{
+		Domain: reqState.Domain,
 	}
 
-	respState := domainAnnotationResourceModel{
-		Domain:      reqState.Domain,
-		Annotations: jsontypes.Normalized{StringValue: types.StringValue(string(jsonStr))},
+	if len(metadata.Data.Metadata.Annotations) == 0 {
+		respState.Annotations = jsontypes.NewNormalizedNull()
+	} else {
+		jsonStr, err := json.Marshal(metadata.Data.Metadata.Annotations)
+		if err != nil {
+			resp.Diagnostics.Append(diag.NewErrorDiagnostic(err.Error(), ""))
+			return
+		}
+		respState.Annotations = jsontypes.Normalized{StringValue: types.StringValue(string(jsonStr))}
 	}
 	setStateDiags := resp.State.Set(ctx, respState)
 	resp.Diagnostics.Append(setStateDiags...)
@@ -253,7 +265,10 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	diags = state.Annotations.Unmarshal(&stateObj)
+	if !state.Annotations.IsNull() {
+		diags = state.Annotations.Unmarshal(&stateObj)
+	}
+
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -265,10 +280,15 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	stateString, err := strconv.Unquote(state.Annotations.String())
-	if err != nil {
-		resp.Diagnostics.AddError("Strings Unquote Error", err.Error())
-		return
+	var stateString string
+	if !state.Annotations.IsNull() {
+		stateString, err = strconv.Unquote(state.Annotations.String())
+		if err != nil {
+			resp.Diagnostics.AddError("Strings Unquote Error", err.Error())
+			return
+		}
+	} else {
+		stateString = string(json.RawMessage(`{}`))
 	}
 
 	// Get the diff between plan Annotations and state Annotations
@@ -292,7 +312,8 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 		}
 		httpResp, err := r.client.CreateAnnotations(state.Domain.ValueString(), payload)
 		if err != nil {
-			resp.Diagnostics.AddWarning("Update Annotation: Create New Key Error: ", string(httpResp))
+			resp.Diagnostics.AddError("Update Annotation: Create New Key Error: ", string(httpResp))
+			return
 		} else {
 			setStateDiags := resp.State.Set(ctx, state)
 			resp.Diagnostics.Append(setStateDiags...)
@@ -313,7 +334,8 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 		}
 		httpResp, err := r.client.DeleteAnnotations(state.Domain.ValueString(), payload)
 		if err != nil {
-			resp.Diagnostics.AddWarning("Update Annotation: Delete Key Error: ", string(httpResp))
+			resp.Diagnostics.AddError("Update Annotation: Delete Key Error: ", string(httpResp))
+			return
 		} else {
 			setStateDiags := resp.State.Set(ctx, state)
 			resp.Diagnostics.Append(setStateDiags...)
@@ -332,21 +354,19 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 			resp.Diagnostics.AddError("JSON Marshal Error", err.Error())
 			return
 		}
-		_, err = r.client.UpdateAnnotations(state.Domain.ValueString(), payload)
+		httpResp, err := r.client.UpdateAnnotations(state.Domain.ValueString(), payload)
 		if err != nil {
-			resp.Diagnostics.AddWarning("Update Annotation: Update Key Error: ", err.Error())
+			resp.Diagnostics.AddError("Update Annotation: Update Key Error: ", string(httpResp))
+			return
 		} else {
 			setStateDiags := resp.State.Set(ctx, state)
 			resp.Diagnostics.Append(setStateDiags...)
 		}
 	}
 
-	state2 := domainAnnotationResourceModel{
-		Domain:      plan.Domain,
-		Annotations: plan.Annotations,
-	}
+	finalState := plan
 
-	setStateDiags := resp.State.Set(ctx, state2)
+	setStateDiags := resp.State.Set(ctx, finalState)
 	resp.Diagnostics.Append(setStateDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -364,6 +384,15 @@ func (r *domainAnnotationsResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
+	// There is a chance that the annotation may be deleted outside of Terraform
+	// Upon the next refresh cycle, the annotations result may be null.
+	// If it is indeed null, just remove the resource from state.
+	// There is nothing else to do to
+	if state.Annotations.IsNull() {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	stateObj := map[string]interface{}{}
 	diags := state.Annotations.Unmarshal(&stateObj)
 	resp.Diagnostics.Append(diags...)
@@ -372,7 +401,7 @@ func (r *domainAnnotationsResource) Delete(ctx context.Context, req resource.Del
 	}
 
 	// The payload is a json object with keys and values. For annotation deletion, we only need an array of keys.
-	payload, err := json.Marshal(maps.Keys(stateObj))
+	payload, _ := json.Marshal(maps.Keys(stateObj))
 
 	httpResp, err := r.client.DeleteAnnotations(state.Domain.ValueString(), payload)
 	if err != nil {

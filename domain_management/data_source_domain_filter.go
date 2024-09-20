@@ -9,18 +9,21 @@ import (
 	"strconv"
 
 	"github.com/myklst/terraform-provider-st-domain-management/api"
+	"github.com/myklst/terraform-provider-st-domain-management/utils"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 type domainFilterDataSourceModel struct {
 	DomainLabels      jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
 	DomainAnnotations jsontypes.Normalized `tfsdk:"domain_annotations" json:"domain_annotations"`
-	Domains           types.List           `tfsdk:"domains" json:"domains"`
+	Domains           types.Set            `tfsdk:"domains" json:"domains"`
 }
 
 func (d *domainFilterDataSourceModel) Payload() (payload map[string]any) {
@@ -62,10 +65,10 @@ func (d *domainFilterDataSource) Metadata(ctx context.Context, req datasource.Me
 
 func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Query domains that satisfy the filter using Terraform Data Source",
+		Description: "Query domains that satisfy the filter using Terraform Data Source.",
 		Attributes: map[string]schema.Attribute{
-			"domains": schema.ListAttribute{
-				Description: "List of domain names that match the given filter.",
+			"domains": schema.SetAttribute{
+				Description: "Set of domain names that match the given filter.",
 				ElementType: types.StringType,
 				Computed:    true,
 			},
@@ -73,11 +76,19 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 				Description: "Labels filter. Only domains that contain these labels will be returned as data source output.",
 				CustomType:  jsontypes.NormalizedType{},
 				Required:    true,
+				Validators: []validator.String{
+					utils.MustBeMapOfString{},
+					utils.MustNotBeNull{},
+				},
 			},
 			"domain_annotations": schema.StringAttribute{
 				Description: "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
 				CustomType:  jsontypes.NormalizedType{},
 				Optional:    true,
+				Validators: []validator.String{
+					utils.MustBeMapOfString{},
+					utils.MustNotBeNull{},
+				},
 			},
 		},
 	}
@@ -141,7 +152,18 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 			return
 		}
 
-		resp.Diagnostics.AddError("HTTP Error", fmt.Sprintf("Got response %s: %s", strconv.Itoa(response.StatusCode), jsonBody["err"]))
+		resp.Diagnostics.AddWarning("No domains found. Please try again with the correct domain label filters.",
+			fmt.Sprintf("Got response %s: %s", strconv.Itoa(response.StatusCode), jsonBody["err"]))
+
+		domainsSet, diags := basetypes.NewSetValueFrom(ctx, types.StringType, []string{})
+		resp.Diagnostics = append(resp.Diagnostics, diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		state.Domains = domainsSet
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+
 		return
 	}
 
@@ -162,7 +184,7 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	state.Domains, diags = types.ListValueFrom(ctx, types.StringType, domains.Domains)
+	state.Domains, diags = types.SetValueFrom(ctx, types.StringType, domains.Domains)
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {

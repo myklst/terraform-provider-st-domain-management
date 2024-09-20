@@ -248,7 +248,7 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 			return
 		}
 
-		convertedDomain, err := element.convertToTerraform(filterLabels)
+		convertedDomain, err := element.convertToTerraformDataType(filterLabels)
 		if err != nil {
 			resp.Diagnostics.AddError("Error occured while converting api response to Terraform struct.", err.Error())
 			return
@@ -270,11 +270,11 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 }
 
 // Converts a domain response from the API into a domain for Terraform
-func (d *domainFullResp) convertToTerraform(subdomainLabels string) (*domain, error) {
+func (d *domainFullResp) convertToTerraformDataType(subdomainLabels string) (*domain, error) {
 	subdomains := []subdomain{}
 
 	for _, subdomain := range d.Subdomains {
-		a, err := subdomain.convertToTerraformSubdomain(d.Domain, subdomainLabels)
+		a, err := subdomain.convertToTerraformDataType(d.Domain, subdomainLabels)
 		if err != nil {
 			return nil, err
 		}
@@ -295,7 +295,7 @@ func (d *domainFullResp) convertToTerraform(subdomainLabels string) (*domain, er
 }
 
 // Converts a subdomain response from the API into a subdomain for Terraform
-func (s *subdomainFull) convertToTerraformSubdomain(domain string, subdomainLabelsFilter string) (*subdomain, error) {
+func (s *subdomainFull) convertToTerraformDataType(domain string, subdomainLabelsFilter string) (*subdomain, error) {
 	filter := map[string]interface{}{}
 	err := json.Unmarshal([]byte(subdomainLabelsFilter), &filter)
 	if err != nil {

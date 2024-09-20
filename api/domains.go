@@ -140,7 +140,7 @@ func (c *Client) GetOnlyDomain(payload []byte) (res *http.Response, err error) {
 	return
 }
 
-func (c *Client) GetDomainsFull(payload []byte) (res *http.Response,err error) {
+func (c *Client) GetDomainsFull(payload []byte) (res *http.Response, err error) {
 	url, err := url.Parse(fmt.Sprintf(GetDomainsFull, c.Endpoint))
 	if err != nil {
 		return nil, err

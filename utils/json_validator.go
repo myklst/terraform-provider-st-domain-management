@@ -3,13 +3,12 @@ package utils
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-type MustBeMapOfString struct {}
+type MustBeMapOfString struct{}
 
 func (v MustBeMapOfString) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
 	var jsonObj map[string]interface{}
@@ -36,14 +35,14 @@ func (v MustBeMapOfString) ValidateString(ctx context.Context, req validator.Str
 }
 
 func (v MustBeMapOfString) Description(_ context.Context) string {
-	return fmt.Sprintf("Annotations must be a key value pair. Key must be of type string")
+	return "Annotations must be a key value pair. Key must be of type string"
 }
 
 func (v MustBeMapOfString) MarkdownDescription(ctx context.Context) string {
 	return v.Description(ctx)
 }
 
-type MustNotBeNull struct {}
+type MustNotBeNull struct{}
 
 func (v MustNotBeNull) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
 	if req.ConfigValue.IsNull() {
@@ -56,7 +55,7 @@ func (v MustNotBeNull) ValidateString(ctx context.Context, req validator.StringR
 }
 
 func (v MustNotBeNull) Description(_ context.Context) string {
-	return fmt.Sprintf("JSON string must not be \"null\"")
+	return "JSON string must not be \"null\""
 }
 
 func (v MustNotBeNull) MarkdownDescription(ctx context.Context) string {

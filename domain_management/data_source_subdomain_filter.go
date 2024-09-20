@@ -103,10 +103,10 @@ func (d *subdomainFilterDataSource) Metadata(ctx context.Context, req datasource
 
 func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Query domains that satisfy the filter using Terraform Data Source",
+		Description: "Query subdomains that satisfy the filter using Terraform Data Source",
 		Attributes: map[string]schema.Attribute{
 			"domains": schema.SetAttribute{
-				Description: "List of domain names that match the given filter.",
+				Description: "Set of domain names that match the given filter.",
 				ElementType: basetypes.ObjectType{
 					AttrTypes: map[string]attr.Type{
 						"domain": types.StringType,

@@ -22,7 +22,7 @@ import (
 type domainFilterDataSourceModel struct {
 	DomainLabels      jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
 	DomainAnnotations jsontypes.Normalized `tfsdk:"domain_annotations" json:"domain_annotations"`
-	Domains           types.Set           `tfsdk:"domains" json:"domains"`
+	Domains           types.Set            `tfsdk:"domains" json:"domains"`
 }
 
 func (d *domainFilterDataSourceModel) Payload() (payload map[string]any) {
@@ -67,7 +67,7 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 		Description: "Query domains that satisfy the filter using Terraform Data Source",
 		Attributes: map[string]schema.Attribute{
 			"domains": schema.SetAttribute{
-				Description: "List of domain names that match the given filter.",
+				Description: "Set of domain names that match the given filter.",
 				ElementType: types.StringType,
 				Computed:    true,
 			},

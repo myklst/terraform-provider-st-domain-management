@@ -27,10 +27,6 @@ func NewDomainAnnotationResource() resource.Resource {
 	return &domainAnnotationsResource{}
 }
 
-type metadataConfigTF struct {
-	Annotations jsontypes.NormalizedType `tfsdk:"annotations" json:"annotations"`
-}
-
 type metadataConfig struct {
 	Annotations map[string]interface{} `yaml:"annotations,omitempty" json:"annotations,omitempty" bson:"annotations,omitempty"`
 }
@@ -133,6 +129,9 @@ func (r *domainAnnotationsResource) ImportState(ctx context.Context, req resourc
 	}
 
 	jsonStr, err := json.Marshal(metadata.Data.Metadata.Annotations)
+	if err != nil {
+		resp.Diagnostics.AddError("JSON Marshal Error", err.Error())
+	}
 
 	state := domainAnnotationResourceModel{
 		Domain:      types.StringValue(imported.Domain),
@@ -402,7 +401,7 @@ func (r *domainAnnotationsResource) Delete(ctx context.Context, req resource.Del
 	}
 
 	// The payload is a json object with keys and values. For annotation deletion, we only need an array of keys.
-	payload, err := json.Marshal(maps.Keys(stateObj))
+	payload, _ := json.Marshal(maps.Keys(stateObj))
 
 	httpResp, err := r.client.DeleteAnnotations(state.Domain.ValueString(), payload)
 	if err != nil {

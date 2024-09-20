@@ -221,7 +221,10 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 			return
 		}
 
-		resp.Diagnostics.AddError("HTTP Error", fmt.Sprintf("Got response %s: %s", strconv.Itoa(response.StatusCode), jsonBody["err"]))
+		resp.Diagnostics.AddWarning("No domains found. Please try again with the correct domain label filters.",
+			fmt.Sprintf("Got response %s: %s", strconv.Itoa(response.StatusCode), jsonBody["err"]))
+		state.Domains = make([]domain, 0)
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 		return
 	}
 
@@ -257,7 +260,9 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 	}
 
 	if len(state.Domains) == 0 {
-		resp.Diagnostics.AddError("No subdomains found. Please try again with the correct domain and subdomain label filters.", "")
+		resp.Diagnostics.AddWarning("No subdomains found. Please try again with the correct domain and subdomain label filters.", "")
+		state.Domains = make([]domain, 0)
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 		return
 	}
 

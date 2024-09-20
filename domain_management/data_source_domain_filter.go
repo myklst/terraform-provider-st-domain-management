@@ -152,8 +152,11 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 			return
 		}
 
-		resp.Diagnostics.AddError("No domains found. Please try again with the correct domain label filters.",
+		resp.Diagnostics.AddWarning("No domains found. Please try again with the correct domain label filters.",
 			fmt.Sprintf("Got response %s: %s", strconv.Itoa(response.StatusCode), jsonBody["err"]))
+		state.Domains = basetypes.SetValue{}
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+
 		return
 	}
 

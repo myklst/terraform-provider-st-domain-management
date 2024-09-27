@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/myklst/terraform-provider-st-domain-management/api"
 	"github.com/myklst/terraform-provider-st-domain-management/utils"
@@ -141,7 +142,6 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 				Required:    true,
 				Validators: []validator.String{
 					utils.MustBeMapOfString{},
-					utils.MustNotBeNull{},
 				},
 			},
 			"domain_annotations": schema.StringAttribute{
@@ -150,7 +150,6 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 				Optional:    true,
 				Validators: []validator.String{
 					utils.MustBeMapOfString{},
-					utils.MustNotBeNull{},
 				},
 			},
 			"subdomain_labels": schema.StringAttribute{
@@ -159,7 +158,6 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 				Required:    true,
 				Validators: []validator.String{
 					utils.MustBeMapOfString{},
-					utils.MustNotBeNull{},
 				},
 			},
 		},
@@ -326,7 +324,7 @@ func (s *subdomainFull) convertToTerraformDataType(domain string, subdomainLabel
 
 	return &subdomain{
 		Name:   types.StringValue(s.Name),
-		Fqdn:   types.StringValue(fmt.Sprintf("%s.%s", s.Name, domain)),
+		Fqdn:   types.StringValue(strings.Join([]string{s.Name, domain}, ".")),
 		Labels: jsontypes.NewNormalizedValue(string(stringJson)),
 	}, nil
 }

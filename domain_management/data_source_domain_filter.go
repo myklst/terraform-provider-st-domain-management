@@ -78,7 +78,6 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 				Required:    true,
 				Validators: []validator.String{
 					utils.MustBeMapOfString{},
-					utils.MustNotBeNull{},
 				},
 			},
 			"domain_annotations": schema.StringAttribute{
@@ -87,7 +86,6 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 				Optional:    true,
 				Validators: []validator.String{
 					utils.MustBeMapOfString{},
-					utils.MustNotBeNull{},
 				},
 			},
 		},

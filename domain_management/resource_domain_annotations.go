@@ -84,7 +84,6 @@ func (r *domainAnnotationsResource) Schema(ctx context.Context, req resource.Sch
 				Required:    true,
 				Validators: []validator.String{
 					utils.MustBeMapOfString{},
-					utils.MustNotBeNull{},
 				},
 			},
 		},

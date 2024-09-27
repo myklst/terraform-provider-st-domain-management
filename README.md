@@ -55,10 +55,10 @@ Local Installation
 ```terraform
 resource "..." "example" {
   domain = test.com
-  annotations = {
+  annotations = jsonencode({
 		"common/devops/status" = true
 		"common/devops/last-run" = "yesterday"
-  }
+  })
 }
 ```
 
@@ -66,12 +66,12 @@ resource "..." "example" {
 ```terraform
 resource "..." "example" {
   domain = test.com
-  annotations = {
+  annotations = jsonencode({
 		"common/devops" = {
 			status = true
 			"last-run" = "yesterday"
 		}
-  }
+  })
 }
 ```
 
@@ -86,22 +86,22 @@ resource "..." "example" {
 
 - `DB Data`
 ```
-annotations = {
+annotations = jsonencode({
 	common/A = {...}
 	common/B = {...}
 	common/C = {...}
-}
+})
 ```
 
 - `ModuleA`
 ```
 resource "..." "example" {
   domain = test.com
-  annotations = {
+  annotations = jsonencode({
 		"common/A" = {
 			status = true
 		}
-  }
+  })
 }
 ```
 
@@ -109,11 +109,11 @@ resource "..." "example" {
 ```
 resource "..." "example" {
   domain = test.com
-  annotations = {
+  annotations = jsonencode({
 		"common/B" = {
 			status = false
 		}
-  }
+  })
 }
 ```
 4. If root key exists, further `Create` request of the same key will fail.

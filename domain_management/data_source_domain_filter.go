@@ -187,8 +187,8 @@ func domainApiModelToDataSourceModel(httpResp []*api.Domain) (domains []domain, 
 		}
 
 		domains = append(domains, domain{
-			Domain: types.StringValue(domainResp.Domain),
-			Labels: jsontypes.NewNormalizedValue(string(labels)),
+			Domain:      types.StringValue(domainResp.Domain),
+			Labels:      jsontypes.NewNormalizedValue(string(labels)),
 			Annotations: jsontypes.NewNormalizedValue(string(annotations)),
 		})
 	}

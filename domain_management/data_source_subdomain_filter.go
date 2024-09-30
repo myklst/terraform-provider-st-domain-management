@@ -23,9 +23,15 @@ type subdomain struct {
 	Labels jsontypes.Normalized `tfsdk:"labels" json:"labels"`
 }
 
+type domainDetails struct {
+	Name        types.String         `tfsdk:"name" json:"domain"`
+	Labels      jsontypes.Normalized `tfsdk:"labels" json:"labels"`
+	Annotations jsontypes.Normalized `tfsdk:"annotations" json:"annotations"`
+}
+
 type domainFull struct {
-	Domain     types.String `tfsdk:"domain" json:"domain"`
-	Subdomains []subdomain  `tfsdk:"subdomains" json:"subdomains"`
+	Domain     domainDetails `tfsdk:"domain" json:"domain"`
+	Subdomains []subdomain   `tfsdk:"subdomains" json:"subdomains"`
 }
 
 type subdomainFilterDataSourceModel struct {
@@ -85,9 +91,26 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 			"domains": schema.SetNestedAttribute{
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"domain": schema.StringAttribute{
-							Description: "The main domain of this result.",
-							Computed:    true,
+						"domain": schema.SingleNestedAttribute{
+							Attributes: map[string]schema.Attribute{
+								"name": schema.StringAttribute{
+									Description: "The name of the domain.",
+									Computed:    true,
+								},
+								"labels": schema.StringAttribute{
+									CustomType: jsontypes.NormalizedType{},
+									Description: "The JSON encoded string of the labels attached to this domain. " +
+										"Wrap this resource in jsondecode() to use it as a Terraform data type.",
+									Computed: true,
+								},
+								"annotations": schema.StringAttribute{
+									CustomType: jsontypes.NormalizedType{},
+									Description: "The JSON encoded string of the annotations attached to this domain. " +
+										"Wrap this resource in jsondecode() to use it as a Terraform data type.",
+									Computed: true,
+								},
+							},
+							Computed: true,
 						},
 						"subdomains": schema.SetNestedAttribute{
 							NestedObject: schema.NestedAttributeObject{
@@ -233,8 +256,26 @@ func domainFullApiModelToDataSource(httpResp []*api.DomainFull) (domainsFull []d
 			subdomains = append(subdomains, subdomain)
 		}
 
+		domainLabels, err := json.Marshal(domainResp.Metadata.Labels)
+		if err != nil {
+			diags.AddError("Cannot marshal JSON", err.Error())
+			return nil, diags
+		}
+
+		domainAnnotations, err := json.Marshal(domainResp.Metadata.Labels)
+		if err != nil {
+			diags.AddError("Cannot marshal JSON", err.Error())
+			return nil, diags
+		}
+
+		domainDetail := domainDetails{
+			Name:        types.StringValue(domainResp.Domain),
+			Labels:      jsontypes.NewNormalizedValue(string(domainLabels)),
+			Annotations: jsontypes.NewNormalizedValue(string(domainAnnotations)),
+		}
+
 		domain := domainFull{
-			Domain:     types.StringValue(domainResp.Domain),
+			Domain:     domainDetail,
 			Subdomains: subdomains,
 		}
 		domainsFull = append(domainsFull, domain)

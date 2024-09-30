@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"golang.org/x/exp/maps"
 
@@ -13,7 +12,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -25,14 +23,6 @@ import (
 
 func NewDomainAnnotationResource() resource.Resource {
 	return &domainAnnotationsResource{}
-}
-
-type metadataConfig struct {
-	Annotations map[string]interface{} `yaml:"annotations,omitempty" json:"annotations,omitempty" bson:"annotations,omitempty"`
-}
-
-type annotationsMetadata struct {
-	Metadata metadataConfig `yaml:"metadata,omitempty" json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 
 type domainAnnotationResourceModel struct {
@@ -111,34 +101,23 @@ func (r *domainAnnotationsResource) ImportState(ctx context.Context, req resourc
 		return
 	}
 
-	bytes, err := r.client.ReadAnnotations(imported.Domain, strAnnotation)
+	annotationsResp, err := r.client.ReadAnnotations(imported.Domain, strAnnotation)
 	if resp.Diagnostics.HasError() {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
-	var metadata struct {
-		Data annotationsMetadata `json:"dt"`
-	}
-
-	err = json.Unmarshal(bytes, &metadata)
-	if err != nil {
-		resp.Diagnostics.Append(diag.NewErrorDiagnostic(err.Error(), ""))
-		return
-	}
-
-	jsonStr, err := json.Marshal(metadata.Data.Metadata.Annotations)
+	jsonStr, err := json.Marshal(annotationsResp)
 	if err != nil {
 		resp.Diagnostics.AddError("JSON Marshal Error", err.Error())
 	}
 
 	state := domainAnnotationResourceModel{
 		Domain:      types.StringValue(imported.Domain),
-		Annotations: jsontypes.Normalized{StringValue: types.StringValue(string(jsonStr))},
+		Annotations: jsontypes.NewNormalizedValue(string(jsonStr)),
 	}
 
-	resp.State.SetAttribute(ctx, path.Root("domain"), state.Domain)
-	resp.State.SetAttribute(ctx, path.Root("annotations"), state.Annotations)
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 func (r *domainAnnotationsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -151,13 +130,7 @@ func (r *domainAnnotationsResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	str, err := strconv.Unquote(plan.Annotations.String())
-	if err != nil {
-		resp.Diagnostics.AddError("Strings Unquote Error", err.Error())
-		return
-	}
-
-	errMsg, err := r.client.CreateAnnotations(plan.Domain.ValueString(), []byte(str))
+	errMsg, err := r.client.CreateAnnotations(plan.Domain.ValueString(), plan.Annotations.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create annotations, got error: %s", utils.Extract(errMsg)))
 		return
@@ -202,18 +175,9 @@ func (r *domainAnnotationsResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	bytes, err := r.client.ReadAnnotations(reqState.Domain.ValueString(), payload)
+	annotationsResp, err := r.client.ReadAnnotations(reqState.Domain.ValueString(), payload)
 	if err != nil {
 		resp.Diagnostics.Append(diag.NewErrorDiagnostic("Unmarshal Error", err.Error()))
-		return
-	}
-
-	var metadata struct {
-		Data annotationsMetadata `json:"dt"`
-	}
-	err = json.Unmarshal(bytes, &metadata)
-	if err != nil {
-		resp.Diagnostics.Append(diag.NewErrorDiagnostic(err.Error(), ""))
 		return
 	}
 
@@ -221,10 +185,10 @@ func (r *domainAnnotationsResource) Read(ctx context.Context, req resource.ReadR
 		Domain: reqState.Domain,
 	}
 
-	if len(metadata.Data.Metadata.Annotations) == 0 {
+	if len(annotationsResp) == 0 {
 		respState.Annotations = jsontypes.NewNormalizedNull()
 	} else {
-		jsonStr, err := json.Marshal(metadata.Data.Metadata.Annotations)
+		jsonStr, err := json.Marshal(annotationsResp)
 		if err != nil {
 			resp.Diagnostics.Append(diag.NewErrorDiagnostic(err.Error(), ""))
 			return
@@ -273,19 +237,11 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	planString, err := strconv.Unquote(plan.Annotations.String())
-	if err != nil {
-		resp.Diagnostics.AddError("Strings Unquote Error", err.Error())
-		return
-	}
+	planString := plan.Annotations.ValueString()
 
 	var stateString string
 	if !state.Annotations.IsNull() {
-		stateString, err = strconv.Unquote(state.Annotations.String())
-		if err != nil {
-			resp.Diagnostics.AddError("Strings Unquote Error", err.Error())
-			return
-		}
+		stateString = state.Annotations.ValueString()
 	} else {
 		stateString = string(json.RawMessage(`{}`))
 	}
@@ -309,7 +265,7 @@ func (r *domainAnnotationsResource) Update(ctx context.Context, req resource.Upd
 			resp.Diagnostics.AddError("JSON Marshal Error", err.Error())
 			return
 		}
-		httpResp, err := r.client.CreateAnnotations(state.Domain.ValueString(), payload)
+		httpResp, err := r.client.CreateAnnotations(state.Domain.ValueString(), string(payload))
 		if err != nil {
 			resp.Diagnostics.AddError("Update Annotation: Create New Key Error: ", string(httpResp))
 			return

@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"strconv"
 
 	"github.com/myklst/terraform-provider-st-domain-management/api"
 	"github.com/myklst/terraform-provider-st-domain-management/utils"
@@ -14,16 +11,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
+
+type domain struct {
+	Domain types.String         `tfsdk:"domain" json:"domain"`
+	Labels jsontypes.Normalized `tfsdk:"labels" json:"labels"`
+}
 
 type domainFilterDataSourceModel struct {
 	DomainLabels      jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
 	DomainAnnotations jsontypes.Normalized `tfsdk:"domain_annotations" json:"domain_annotations"`
-	Domains           types.Set            `tfsdk:"domains" json:"domains"`
+	Domains           []domain             `tfsdk:"domains" json:"domains"`
 }
 
 func (d *domainFilterDataSourceModel) Payload() (payload map[string]any) {
@@ -67,10 +68,23 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 	resp.Schema = schema.Schema{
 		Description: "Query domains that satisfy the filter using Terraform Data Source.",
 		Attributes: map[string]schema.Attribute{
-			"domains": schema.SetAttribute{
+			"domains": schema.SetNestedAttribute{
 				Description: "Set of domain names that match the given filter.",
-				ElementType: types.StringType,
-				Computed:    true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"domain": schema.StringAttribute{
+							Description: "The name of the domain.",
+							Computed:    true,
+						},
+						"labels": schema.StringAttribute{
+							CustomType: jsontypes.NormalizedType{},
+							Description: "The JSON encoded string of the labels attachd to this subdomain. " +
+								"Wrap this resource in jsondecode() to use it as a Terraform data type.",
+							Computed: true,
+						},
+					},
+				},
+				Computed: true,
 			},
 			"domain_labels": schema.StringAttribute{
 				Description: "Labels filter. Only domains that contain these labels will be returned as data source output.",
@@ -117,80 +131,53 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 
 	diags := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	payload := state.Payload()
-	jsonData, err := json.Marshal(payload)
+	jsonData, err := json.Marshal(state.Payload())
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
-	response, err := d.client.GetOnlyDomain(jsonData)
+	domains, err := d.client.GetDomains(jsonData)
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read domains, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read domains: %s", err))
 		return
 	}
-	defer response.Body.Close()
 
-	if response.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(response.Body)
-		if err != nil {
-			resp.Diagnostics.AddError("Read response Error", err.Error())
-			return
-		}
+	if len(domains) == 0 {
+		resp.Diagnostics.AddWarning("No domains found. Please try again with the correct domain label filters.", "")
 
-		jsonBody := map[string]interface{}{}
-		err = json.Unmarshal(body, &jsonBody)
-		if err != nil {
-			resp.Diagnostics.AddError("JSON Unmarshal Error", err.Error())
-			return
-		}
-
-		resp.Diagnostics.AddWarning("No domains found. Please try again with the correct domain label filters.",
-			fmt.Sprintf("Got response %s: %s", strconv.Itoa(response.StatusCode), jsonBody["err"]))
-
-		domainsSet, diags := basetypes.NewSetValueFrom(ctx, types.StringType, []string{})
-		resp.Diagnostics = append(resp.Diagnostics, diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		state.Domains = domainsSet
+		state.Domains = make([]domain, 0)
 		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-
 		return
 	}
 
-	body, err := io.ReadAll(response.Body)
-
-	if err != nil {
-		resp.Diagnostics.AddError("Can not read response body", "")
-		return
-	}
-
-	var domains struct {
-		Domains []string `json:"dt"`
-	}
-	domains.Domains = []string{}
-
-	if err := json.Unmarshal(body, &domains); err != nil {
-		resp.Diagnostics.AddError("Can not unmarshal JSON", err.Error())
-		return
-	}
-
-	state.Domains, diags = types.SetValueFrom(ctx, types.StringType, domains.Domains)
+	state.Domains, diags = domainApiModelToDataSourceModel(domains)
 	resp.Diagnostics.Append(diags...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	tflog.Trace(ctx, "Done reading domain data source")
-
-	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
+
+func domainApiModelToDataSourceModel(httpResp []*api.Domain) (domains []domain, diags diag.Diagnostics) {
+	domains = make([]domain, 0)
+	for _, domainResp := range httpResp {
+		labels, err := json.Marshal(domainResp.Metadata.Labels)
+		if err != nil {
+			diags.AddError("Cannot marshal JSON", err.Error())
+			return nil, diags
+		}
+
+		domains = append(domains, domain{
+			Domain: types.StringValue(domainResp.Domain),
+			Labels: jsontypes.NewNormalizedValue(string(labels)),
+		})
+	}
+
+	return domains, nil
 }

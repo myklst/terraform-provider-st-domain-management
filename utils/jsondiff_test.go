@@ -178,3 +178,13 @@ func TestPathAdhereToRFC6902(t *testing.T) {
 		assert.Equal("annotationB~1annotationC~/annotationD", k, "")
 	}
 }
+
+func TestDiffingOnEmptyString(t *testing.T) {
+	plan := json.RawMessage("")
+	state := json.RawMessage("")
+
+	_, err := JSONDiffToTerraformOperations(state, plan)
+	if err != nil {
+		t.Error(err)
+	}
+}

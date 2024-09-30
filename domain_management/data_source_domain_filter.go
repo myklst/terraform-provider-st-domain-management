@@ -17,8 +17,9 @@ import (
 )
 
 type domain struct {
-	Domain types.String         `tfsdk:"domain" json:"domain"`
-	Labels jsontypes.Normalized `tfsdk:"labels" json:"labels"`
+	Domain      types.String         `tfsdk:"domain" json:"domain"`
+	Labels      jsontypes.Normalized `tfsdk:"labels" json:"labels"`
+	Annotations jsontypes.Normalized `tfsdk:"annotations" json:"annotations"`
 }
 
 type domainFilterDataSourceModel struct {
@@ -78,7 +79,13 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 						},
 						"labels": schema.StringAttribute{
 							CustomType: jsontypes.NormalizedType{},
-							Description: "The JSON encoded string of the labels attachd to this subdomain. " +
+							Description: "The JSON encoded string of the labels attached to this domain. " +
+								"Wrap this resource in jsondecode() to use it as a Terraform data type.",
+							Computed: true,
+						},
+						"annotations": schema.StringAttribute{
+							CustomType: jsontypes.NormalizedType{},
+							Description: "The JSON encoded string of the annotations attached to this domain. " +
 								"Wrap this resource in jsondecode() to use it as a Terraform data type.",
 							Computed: true,
 						},
@@ -173,9 +180,16 @@ func domainApiModelToDataSourceModel(httpResp []*api.Domain) (domains []domain, 
 			return nil, diags
 		}
 
+		annotations, err := json.Marshal(domainResp.Metadata.Annotations)
+		if err != nil {
+			diags.AddError("Cannot marshal JSON", err.Error())
+			return nil, diags
+		}
+
 		domains = append(domains, domain{
 			Domain: types.StringValue(domainResp.Domain),
 			Labels: jsontypes.NewNormalizedValue(string(labels)),
+			Annotations: jsontypes.NewNormalizedValue(string(annotations)),
 		})
 	}
 

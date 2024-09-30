@@ -35,4 +35,13 @@ data "st-domain-management_domain_filter" "example" {
 
 ### Read-Only
 
-- `domains` (Set of String) Set of domain names that match the given filter.
+- `domains` (Attributes Set) Set of domain names that match the given filter. (see [below for nested schema](#nestedatt--domains))
+
+<a id="nestedatt--domains"></a>
+### Nested Schema for `domains`
+
+Read-Only:
+
+- `annotations` (String) The JSON encoded string of the annotations attached to this domain. Wrap this resource in jsondecode() to use it as a Terraform data type.
+- `domain` (String) The name of the domain.
+- `labels` (String) The JSON encoded string of the labels attached to this domain. Wrap this resource in jsondecode() to use it as a Terraform data type.

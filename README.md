@@ -144,8 +144,8 @@ data "st-domain-management_domain_filter" "example" {
 ```terrraform
 resource "st-domain-management_domain_annotations" "example" {
   for_each = {
-    for index, value in data.st-domain-management_domain_filter.example.domains :
-    value => value
+    for value in tolist(data.st-domain-management_domain_filter.example.domains) :
+    value.domain => value
   }
 
   domain = each.value

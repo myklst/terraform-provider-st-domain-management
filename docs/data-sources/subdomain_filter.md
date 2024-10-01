@@ -47,8 +47,18 @@ data "st-domain-management_subdomain_filter" "example" {
 
 Read-Only:
 
-- `domain` (String) The main domain of this result.
+- `domain` (Attributes) (see [below for nested schema](#nestedatt--domains--domain))
 - `subdomains` (Attributes Set) (see [below for nested schema](#nestedatt--domains--subdomains))
+
+<a id="nestedatt--domains--domain"></a>
+### Nested Schema for `domains.domain`
+
+Read-Only:
+
+- `annotations` (String) The JSON encoded string of the annotations attached to this domain. Wrap this resource in jsondecode() to use it as a Terraform data type.
+- `labels` (String) The JSON encoded string of the labels attached to this domain. Wrap this resource in jsondecode() to use it as a Terraform data type.
+- `name` (String) The name of the domain.
+
 
 <a id="nestedatt--domains--subdomains"></a>
 ### Nested Schema for `domains.subdomains`
@@ -56,5 +66,5 @@ Read-Only:
 Read-Only:
 
 - `fqdn` (String) The result of joining the subdomain name with the main domain.
-- `labels` (String) The JSON encoded string of the labels attachd to this subdomain. Wrap this resource in jsonencode() to use it as a Terraform resource.
+- `labels` (String) The JSON encoded string of the labels attachd to this subdomain. Wrap this resource in jsondecode() to use it as a Terraform data type.
 - `name` (String) The name of subdomain.

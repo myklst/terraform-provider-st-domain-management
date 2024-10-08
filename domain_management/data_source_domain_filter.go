@@ -24,28 +24,18 @@ type domain struct {
 
 type domainFilterDataSourceModel struct {
 	DomainLabels      jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
-	DomainAnnotations jsontypes.Normalized `tfsdk:"domain_annotations" json:"domain_annotations"`
 	Domains           []domain             `tfsdk:"domains" json:"domains"`
 }
 
 func (d *domainFilterDataSourceModel) Payload() (payload map[string]any) {
 	domains := map[string]any{}
 	labels := map[string]any{}
-	annotations := map[string]any{}
 
 	err := d.DomainLabels.Unmarshal(&labels)
 	if err != nil {
 		panic(err)
 	}
 	domains["labels"] = labels
-
-	if !d.DomainAnnotations.IsNull() {
-		err := d.DomainAnnotations.Unmarshal(&annotations)
-		if err != nil {
-			panic(err)
-		}
-		domains["annotations"] = annotations
-	}
 
 	payload = map[string]any{}
 	payload["metadata"] = domains
@@ -101,14 +91,6 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 					utils.MustBeMapOfString{},
 				},
 			},
-			"domain_annotations": schema.StringAttribute{
-				Description: "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
-				CustomType:  jsontypes.NormalizedType{},
-				Optional:    true,
-				Validators: []validator.String{
-					utils.MustBeMapOfString{},
-				},
-			},
 		},
 	}
 }
@@ -155,7 +137,7 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 	}
 
 	if len(domains) == 0 {
-		resp.Diagnostics.AddWarning("No domains found. Please try again with the correct domain label filters.", "")
+		resp.Diagnostics.AddWarning("No domains found. Please try again with the correct domain filters.", "")
 
 		state.Domains = make([]domain, 0)
 		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

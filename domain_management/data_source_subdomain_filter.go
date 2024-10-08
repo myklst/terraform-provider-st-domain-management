@@ -279,7 +279,7 @@ func subdomainApiModelToDataSource(subdomainResp *api.Subdomain, domain string, 
 	}
 
 	// To determine whether the subdomain subdomain labels satisfies the data source filter,
-	// a three step process is performed.
+	// a four step process is performed.
 	// 1. Extract the map keys from the data source
 	// 2. Use the same map keys to filter the map[string] from
 	// 3. Ensure that the subdomain metadata label is non null.

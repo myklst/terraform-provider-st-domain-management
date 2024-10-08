@@ -244,7 +244,7 @@ func domainFullApiModelToDataSource(httpResp []*api.DomainFull) (domainsFull []d
 			return nil, diags
 		}
 
-		domainAnnotations, err := json.Marshal(domainResp.Metadata.Labels)
+		domainAnnotations, err := json.Marshal(domainResp.Metadata.Annotations)
 		if err != nil {
 			diags.AddError("Cannot marshal JSON", err.Error())
 			return nil, diags

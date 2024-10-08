@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/myklst/terraform-provider-st-domain-management/api"
@@ -195,7 +196,7 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
-	domains, diags := domainFullApiModelToDataSource(domainsFull)
+	domains, diags := domainFullApiModelToDataSource(domainsFull, state.SubdomainLabels.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -212,7 +213,7 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func domainFullApiModelToDataSource(httpResp []*api.DomainFull) (domainsFull []domainFull, diags diag.Diagnostics) {
+func domainFullApiModelToDataSource(httpResp []*api.DomainFull, subdomainLabels string) (domainsFull []domainFull, diags diag.Diagnostics) {
 	domainsFull = make([]domainFull, 0)
 	for _, domainResp := range httpResp {
 		subdomains := []subdomain{}
@@ -221,21 +222,21 @@ func domainFullApiModelToDataSource(httpResp []*api.DomainFull) (domainsFull []d
 				continue
 			}
 
-			subdomainLabels, err := json.Marshal(subdomainResp.Metadata.Labels)
+			subdomain, err := subdomainApiModelToDataSource(subdomainResp, domainResp.Domain, subdomainLabels)
 			if err != nil {
-				diags.AddError("Cannot marshal JSON", err.Error())
-				return nil, diags
+				diags = append(diags, diag.NewErrorDiagnostic("Cannot convert subdomain api model to Terraform", err.Error()))
+				return
 			}
 
-			subdomain := subdomain{
-				Name:   types.StringValue(subdomainResp.Name),
-				Labels: jsontypes.NewNormalizedValue(string(subdomainLabels)),
-				Fqdn: types.StringValue(strings.Join([]string{
-					subdomainResp.Name,
-					domainResp.Domain,
-				}, ".")),
+			if subdomain == nil {
+				continue
 			}
-			subdomains = append(subdomains, subdomain)
+
+			subdomains = append(subdomains, *subdomain)
+		}
+
+		if len(subdomains) == 0 {
+			continue
 		}
 
 		domainLabels, err := json.Marshal(domainResp.Metadata.Labels)
@@ -263,4 +264,40 @@ func domainFullApiModelToDataSource(httpResp []*api.DomainFull) (domainsFull []d
 		domainsFull = append(domainsFull, domain)
 	}
 	return domainsFull, nil
+}
+
+func subdomainApiModelToDataSource(subdomainResp *api.Subdomain, domain string, subdomainLabelsFilter string) (*subdomain, error) {
+	filter := map[string]interface{}{}
+	err := json.Unmarshal([]byte(subdomainLabelsFilter), &filter)
+	if err != nil {
+		return nil, err
+	}
+
+	subdomainLabelsString, err := json.Marshal(subdomainResp.Metadata.Labels)
+	if err != nil {
+		return nil, err
+	}
+
+	// To determine whether the subdomain subdomain labels satisfies the data source filter,
+	// a three step process is performed.
+	// 1. Extract the map keys from the data source
+	// 2. Use the same map keys to filter the map[string] from
+	// 3. Ensure that the map[string] from data source and the map[string]
+	//    from api response is the same
+	apiResponse := map[string]interface{}{}
+	for k := range filter {
+		apiResponse[k] = subdomainResp.Metadata.Labels[k]
+	}
+
+	// Return nil if subdomain labels filter's map contents (data source user input)
+	// is not found in the subdomain from the api response
+	if !reflect.DeepEqual(filter, apiResponse) {
+		return nil, nil
+	}
+
+	return &subdomain{
+		Name:   types.StringValue(subdomainResp.Name),
+		Fqdn:   types.StringValue(strings.Join([]string{subdomainResp.Name, domain}, ".")),
+		Labels: jsontypes.NewNormalizedValue(string(subdomainLabelsString)),
+	}, nil
 }

@@ -23,8 +23,8 @@ type domain struct {
 }
 
 type domainFilterDataSourceModel struct {
-	DomainLabels      jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
-	Domains           []domain             `tfsdk:"domains" json:"domains"`
+	DomainLabels jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
+	Domains      []domain             `tfsdk:"domains" json:"domains"`
 }
 
 func (d *domainFilterDataSourceModel) Payload() (payload map[string]any) {

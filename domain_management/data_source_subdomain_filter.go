@@ -36,9 +36,9 @@ type domainFull struct {
 }
 
 type subdomainFilterDataSourceModel struct {
-	DomainLabels      jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
-	SubdomainLabels   jsontypes.Normalized `tfsdk:"subdomain_labels" json:"subdomains_labels"`
-	Domains           []domainFull         `tfsdk:"domains" json:"domains"`
+	DomainLabels    jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
+	SubdomainLabels jsontypes.Normalized `tfsdk:"subdomain_labels" json:"subdomains_labels"`
+	Domains         []domainFull         `tfsdk:"domains" json:"domains"`
 }
 
 func (d *subdomainFilterDataSourceModel) Payload() ([]byte, diag.Diagnostics) {
@@ -285,7 +285,7 @@ func subdomainApiModelToDataSource(subdomainResp *api.Subdomain, domain string, 
 	// 3. Ensure that the subdomain metadata label is non null.
 	//    If end user query for key = non-existent-key and value = null,
 	//    the result may end up as a false positive match.
-  //    This is because the value of non-existent key in a map is null
+	//    This is because the value of non-existent key in a map is null
 	// 4. Ensure that the map[string] from data source and the map[string]
 	//    from api response is the same
 	apiResponse := map[string]interface{}{}

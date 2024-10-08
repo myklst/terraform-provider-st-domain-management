@@ -34,10 +34,6 @@ data "st-domain-management_subdomain_filter" "example" {
 - `domain_labels` (String) Domain labels filter. Only domains that contain these labels will be returned as data source output.
 - `subdomain_labels` (String) Subdomain labels filter. Only subdomains that contain these labels will be returned as data source output
 
-### Optional
-
-- `domain_annotations` (String) Annotations filter. Only domains that contain these annotations will be returned as data source output.
-
 ### Read-Only
 
 - `domains` (Attributes Set) (see [below for nested schema](#nestedatt--domains))

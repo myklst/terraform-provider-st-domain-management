@@ -282,11 +282,17 @@ func subdomainApiModelToDataSource(subdomainResp *api.Subdomain, domain string, 
 	// a three step process is performed.
 	// 1. Extract the map keys from the data source
 	// 2. Use the same map keys to filter the map[string] from
-	// 3. Ensure that the map[string] from data source and the map[string]
+	// 3. Ensure that the subdomain metadata label is non null.
+	//    If end user query for key = non-existent-key and value = null,
+	//    the result may end up as a false positive match.
+  //    This is because the value of non-existent key in a map is null
+	// 4. Ensure that the map[string] from data source and the map[string]
 	//    from api response is the same
 	apiResponse := map[string]interface{}{}
 	for k := range filter {
-		apiResponse[k] = subdomainResp.Metadata.Labels[k]
+		if subdomainResp.Metadata.Labels[k] != nil {
+			apiResponse[k] = subdomainResp.Metadata.Labels[k]
+		}
 	}
 
 	// Return nil if subdomain labels filter's map contents (data source user input)

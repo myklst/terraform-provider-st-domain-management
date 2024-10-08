@@ -3,7 +3,6 @@ package utils
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -31,9 +30,9 @@ func (v MustBeMapOfString) ValidateString(ctx context.Context, req validator.Str
 		resp.Diagnostics.AddError("JSON Must not be empty", "")
 	}
 
-	for k, v := range jsonObj {
-		if v == nil {
-			resp.Diagnostics.AddError("Cannot filter by a null value", fmt.Sprintf("Value for %s cannot be null", k))
+	for k := range jsonObj {
+		if k == "" {
+			resp.Diagnostics.AddError("Object key cannot be empty string.", "")
 		}
 	}
 }

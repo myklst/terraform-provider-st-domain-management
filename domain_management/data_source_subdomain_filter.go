@@ -270,7 +270,7 @@ func subdomainApiModelToDataSource(subdomainResp *api.Subdomain, domain string, 
 	// To determine whether the subdomain labels satisfies the filter in the data source input,
 	// a three step process is performed.
 	// 1. Unmarshal the filter input into a map[string]interface
-  // 2. For each map key, use the map key to access the labels map[string] from the api response
+	// 2. For each map key, use the map key to access the labels map[string] from the api response
 	// 3. Ensure that the map[string] from data source and the map[string] from api response is the same
 	filter := map[string]interface{}{}
 	err := json.Unmarshal([]byte(subdomainLabelsFilter), &filter)

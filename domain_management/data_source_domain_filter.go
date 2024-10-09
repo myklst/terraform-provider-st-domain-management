@@ -23,19 +23,29 @@ type domain struct {
 }
 
 type domainFilterDataSourceModel struct {
-	DomainLabels jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
-	Domains      []domain             `tfsdk:"domains" json:"domains"`
+	DomainLabels      jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
+	DomainAnnotations jsontypes.Normalized `tfsdk:"domain_annotations" json:"domain_annotations"`
+	Domains           []domain             `tfsdk:"domains" json:"domains"`
 }
 
 func (d *domainFilterDataSourceModel) Payload() (payload map[string]any) {
 	domains := map[string]any{}
 	labels := map[string]any{}
+	annotations := map[string]any{}
 
 	err := d.DomainLabels.Unmarshal(&labels)
 	if err != nil {
 		panic(err)
 	}
 	domains["labels"] = labels
+
+	if !d.DomainAnnotations.IsNull() {
+		err := d.DomainAnnotations.Unmarshal(&annotations)
+		if err != nil {
+			panic(err)
+		}
+		domains["annotations"] = annotations
+	}
 
 	payload = map[string]any{}
 	payload["metadata"] = domains

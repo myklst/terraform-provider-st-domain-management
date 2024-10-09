@@ -267,23 +267,17 @@ func domainFullApiModelToDataSource(httpResp []*api.DomainFull, subdomainLabels 
 }
 
 func subdomainApiModelToDataSource(subdomainResp *api.Subdomain, domain string, subdomainLabelsFilter string) (*subdomain, error) {
+	// To determine whether the subdomain labels satisfies the filter in the data source input,
+	// a three step process is performed.
+	// 1. Unmarshal the filter input into a map[string]interface
+  // 2. For each map key, use the map key to access the labels map[string] from the api response
+	// 3. Ensure that the map[string] from data source and the map[string] from api response is the same
 	filter := map[string]interface{}{}
 	err := json.Unmarshal([]byte(subdomainLabelsFilter), &filter)
 	if err != nil {
 		return nil, err
 	}
 
-	subdomainLabelsString, err := json.Marshal(subdomainResp.Metadata.Labels)
-	if err != nil {
-		return nil, err
-	}
-
-	// To determine whether the subdomain subdomain labels satisfies the data source filter,
-	// a four step process is performed.
-	// 1. Extract the map keys from the data source
-	// 2. Use the same map keys to filter the map[string] from
-	// 3. Ensure that the map[string] from data source and the map[string]
-	//    from api response is the same
 	apiResponse := map[string]interface{}{}
 	for k := range filter {
 		apiResponse[k] = subdomainResp.Metadata.Labels[k]
@@ -293,6 +287,11 @@ func subdomainApiModelToDataSource(subdomainResp *api.Subdomain, domain string, 
 	// is not found in the subdomain from the api response
 	if !reflect.DeepEqual(filter, apiResponse) {
 		return nil, nil
+	}
+
+	subdomainLabelsString, err := json.Marshal(subdomainResp.Metadata.Labels)
+	if err != nil {
+		return nil, err
 	}
 
 	return &subdomain{

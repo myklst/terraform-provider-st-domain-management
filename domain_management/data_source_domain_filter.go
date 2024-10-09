@@ -155,7 +155,7 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 	}
 
 	if len(domains) == 0 {
-		resp.Diagnostics.AddWarning("No domains found. Please try again with the correct domain label filters.", "")
+		resp.Diagnostics.AddWarning("No domains found. Please try again with the correct domain filters.", "")
 
 		state.Domains = make([]domain, 0)
 		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

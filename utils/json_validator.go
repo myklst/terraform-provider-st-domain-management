@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -29,10 +30,21 @@ func (v MustBeMapOfString) ValidateString(ctx context.Context, req validator.Str
 	if len(jsonObj) == 0 {
 		resp.Diagnostics.AddError("JSON Must not be empty", "")
 	}
+
+	for k, v := range jsonObj {
+		if k == "" {
+			resp.Diagnostics.AddError("Object key cannot be empty string.", "")
+			continue
+		}
+
+		if v == nil {
+			resp.Diagnostics.AddError("Null value cannot be used for labels or annotations filter.", fmt.Sprintf("Value for %s cannot be null", k))
+		}
+	}
 }
 
 func (v MustBeMapOfString) Description(_ context.Context) string {
-	return "Annotations must be a key value pair. Key must be of type string"
+	return "Must be a key value pair (map of string). Key must be of type string."
 }
 
 func (v MustBeMapOfString) MarkdownDescription(ctx context.Context) string {

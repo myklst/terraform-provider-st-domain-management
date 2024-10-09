@@ -38,13 +38,13 @@ func (v MustBeMapOfString) ValidateString(ctx context.Context, req validator.Str
 		}
 
 		if v == nil {
-			resp.Diagnostics.AddError("Null value cannot be used for labels filter.", fmt.Sprintf("Value for %s cannot be null", k))
+			resp.Diagnostics.AddError("Null value cannot be used for labels or annotations filter.", fmt.Sprintf("Value for %s cannot be null", k))
 		}
 	}
 }
 
 func (v MustBeMapOfString) Description(_ context.Context) string {
-	return "Annotations must be a key value pair. Key must be of type string"
+	return "Must be a key value pair (map of string). Key must be of type string."
 }
 
 func (v MustBeMapOfString) MarkdownDescription(ctx context.Context) string {

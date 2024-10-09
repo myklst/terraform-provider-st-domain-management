@@ -29,6 +29,10 @@ data "st-domain-management_domain_filter" "example" {
 
 - `domain_labels` (String) Labels filter. Only domains that contain these labels will be returned as data source output.
 
+### Optional
+
+- `domain_annotations` (String) Annotations filter. Only domains that contain these annotations will be returned as data source output.
+
 ### Read-Only
 
 - `domains` (Attributes Set) Set of domain names that match the given filter. (see [below for nested schema](#nestedatt--domains))

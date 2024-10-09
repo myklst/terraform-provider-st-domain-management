@@ -36,20 +36,30 @@ type domainFull struct {
 }
 
 type subdomainFilterDataSourceModel struct {
-	DomainLabels    jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
-	SubdomainLabels jsontypes.Normalized `tfsdk:"subdomain_labels" json:"subdomains_labels"`
-	Domains         []domainFull         `tfsdk:"domains" json:"domains"`
+	DomainLabels      jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
+	DomainAnnotations jsontypes.Normalized `tfsdk:"domain_annotations" json:"domain_annotations"`
+	SubdomainLabels   jsontypes.Normalized `tfsdk:"subdomain_labels" json:"subdomains_labels"`
+	Domains           []domainFull         `tfsdk:"domains" json:"domains"`
 }
 
 func (d *subdomainFilterDataSourceModel) Payload() ([]byte, diag.Diagnostics) {
 	domains := map[string]any{}
 	labels := map[string]any{}
+	annotations := map[string]any{}
 
 	diags := d.DomainLabels.Unmarshal(&labels)
 	if diags.HasError() {
 		return nil, diags
 	}
 	domains["labels"] = labels
+
+	if !d.DomainAnnotations.IsNull() {
+		diags = d.DomainAnnotations.Unmarshal(&annotations)
+		if diags.HasError() {
+			return nil, diags
+		}
+		domains["annotations"] = annotations
+	}
 
 	payload := map[string]any{}
 	payload["metadata"] = domains
@@ -132,6 +142,14 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 				Description: "Domain labels filter. Only domains that contain these labels will be returned as data source output.",
 				CustomType:  jsontypes.NormalizedType{},
 				Required:    true,
+				Validators: []validator.String{
+					utils.MustBeMapOfString{},
+				},
+			},
+			"domain_annotations": schema.StringAttribute{
+				Description: "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
+				CustomType:  jsontypes.NormalizedType{},
+				Optional:    true,
 				Validators: []validator.String{
 					utils.MustBeMapOfString{},
 				},

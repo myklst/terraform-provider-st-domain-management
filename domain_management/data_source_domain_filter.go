@@ -91,6 +91,14 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 					utils.MustBeMapOfString{},
 				},
 			},
+			"domain_annotations": schema.StringAttribute{
+				Description: "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
+				CustomType:  jsontypes.NormalizedType{},
+				Optional:    true,
+				Validators: []validator.String{
+					utils.MustBeMapOfString{},
+				},
+			},
 		},
 	}
 }

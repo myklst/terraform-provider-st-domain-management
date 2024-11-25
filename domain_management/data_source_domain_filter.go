@@ -11,21 +11,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-type domain struct {
-	Domain      types.String         `tfsdk:"domain" json:"domain"`
-	Labels      jsontypes.Normalized `tfsdk:"labels" json:"labels"`
-	Annotations jsontypes.Normalized `tfsdk:"annotations" json:"annotations"`
-}
-
 type domainFilterDataSourceModel struct {
-	DomainLabels      jsontypes.Normalized `tfsdk:"domain_labels" json:"domain_labels"`
-	DomainAnnotations jsontypes.Normalized `tfsdk:"domain_annotations" json:"domain_annotations"`
-	Domains           []domain             `tfsdk:"domains" json:"domains"`
+	DomainLabels      jsontypes.Normalized   `tfsdk:"domain_labels" json:"domain_labels"`
+	DomainAnnotations jsontypes.Normalized   `tfsdk:"domain_annotations" json:"domain_annotations"`
+	Domains           basetypes.DynamicValue `tfsdk:"domains" json:"domains"`
 }
 
 func (d *domainFilterDataSourceModel) Payload() (payload map[string]any) {
@@ -69,29 +62,9 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 	resp.Schema = schema.Schema{
 		Description: "Query domains that satisfy the filter using Terraform Data Source.",
 		Attributes: map[string]schema.Attribute{
-			"domains": schema.SetNestedAttribute{
+			"domains": schema.DynamicAttribute{
 				Description: "Set of domain names that match the given filter.",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"domain": schema.StringAttribute{
-							Description: "The name of the domain.",
-							Computed:    true,
-						},
-						"labels": schema.StringAttribute{
-							CustomType: jsontypes.NormalizedType{},
-							Description: "The JSON encoded string of the labels attached to this domain. " +
-								"Wrap this resource in jsondecode() to use it as a Terraform data type.",
-							Computed: true,
-						},
-						"annotations": schema.StringAttribute{
-							CustomType: jsontypes.NormalizedType{},
-							Description: "The JSON encoded string of the annotations attached to this domain. " +
-								"Wrap this resource in jsondecode() to use it as a Terraform data type.",
-							Computed: true,
-						},
-					},
-				},
-				Computed: true,
+				Computed:    true,
 			},
 			"domain_labels": schema.StringAttribute{
 				Description: "Labels filter. Only domains that contain these labels will be returned as data source output.",
@@ -154,44 +127,11 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	if len(domains) == 0 {
-		resp.Diagnostics.AddWarning("No domains found. Please try again with the correct domain filters.", "")
-
-		state.Domains = make([]domain, 0)
-		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-		return
-	}
-
-	state.Domains, diags = domainApiModelToDataSourceModel(domains)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	state.Domains, err = utils.JSONToTerraformDynamicValue(domains)
+	if err != nil {
+		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
-}
-
-func domainApiModelToDataSourceModel(httpResp []*api.Domain) (domains []domain, diags diag.Diagnostics) {
-	domains = make([]domain, 0)
-	for _, domainResp := range httpResp {
-		labels, err := json.Marshal(domainResp.Metadata.Labels)
-		if err != nil {
-			diags.AddError("Cannot marshal JSON", err.Error())
-			return nil, diags
-		}
-
-		annotations, err := json.Marshal(domainResp.Metadata.Annotations)
-		if err != nil {
-			diags.AddError("Cannot marshal JSON", err.Error())
-			return nil, diags
-		}
-
-		domains = append(domains, domain{
-			Domain:      types.StringValue(domainResp.Domain),
-			Labels:      jsontypes.NewNormalizedValue(string(labels)),
-			Annotations: jsontypes.NewNormalizedValue(string(annotations)),
-		})
-	}
-
-	return domains, nil
 }

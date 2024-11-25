@@ -40,31 +40,9 @@ data "st-domain-management_subdomain_filter" "example" {
 
 ### Read-Only
 
-- `domains` (Attributes Set) (see [below for nested schema](#nestedatt--domains))
-
-<a id="nestedatt--domains"></a>
-### Nested Schema for `domains`
-
-Read-Only:
-
-- `domain` (Attributes) (see [below for nested schema](#nestedatt--domains--domain))
-- `subdomains` (Attributes Set) (see [below for nested schema](#nestedatt--domains--subdomains))
-
-<a id="nestedatt--domains--domain"></a>
-### Nested Schema for `domains.domain`
-
-Read-Only:
-
-- `annotations` (String) The JSON encoded string of the annotations attached to this domain. Wrap this resource in jsondecode() to use it as a Terraform data type.
-- `labels` (String) The JSON encoded string of the labels attached to this domain. Wrap this resource in jsondecode() to use it as a Terraform data type.
-- `name` (String) The name of the domain.
-
-
-<a id="nestedatt--domains--subdomains"></a>
-### Nested Schema for `domains.subdomains`
-
-Read-Only:
-
-- `fqdn` (String) The result of joining the subdomain name with the main domain.
-- `labels` (String) The JSON encoded string of the labels attachd to this subdomain. Wrap this resource in jsondecode() to use it as a Terraform data type.
-- `name` (String) The name of subdomain.
+- `domains` (Dynamic) List of domains that match the given filter.
+Each domain has a subdomains list.
+Each subdomain in the list has name fqdn, and a labels object that can be accessed via its dot notation.
+e.g. `domains[0].subdomains[0].labels["common/env"]`
+Additionally, each domain has a metadata object that can be accessed via its dot notation.
+e.g. `domains[0].metadata.labels["common/env"]`

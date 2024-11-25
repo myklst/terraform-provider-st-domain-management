@@ -91,6 +91,14 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 		Description: "Query subdomains that satisfy the filter using Terraform Data Source.",
 		Attributes: map[string]schema.Attribute{
 			"domains": schema.DynamicAttribute{
+				Description: strings.Join([]string{
+					"List of domains that match the given filter.",
+					"Each domain has a subdomains list.",
+					"Each subdomain in the list has name fqdn, and a labels object that can be accessed via its dot notation.",
+					"e.g. `domains[0].subdomains[0].labels[\"common/env\"]`",
+					"Additionally, each domain has a metadata object that can be accessed via its dot notation.",
+					"e.g. `domains[0].metadata.labels[\"common/env\"]`",
+				}, "\n"),
 				Computed: true,
 			},
 			"domain_labels": schema.StringAttribute{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/myklst/terraform-provider-st-domain-management/api"
 	"github.com/myklst/terraform-provider-st-domain-management/utils"
@@ -64,8 +65,12 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 		Description: "Query domains that satisfy the filter using Terraform Data Source.",
 		Attributes: map[string]schema.Attribute{
 			"domains": schema.DynamicAttribute{
-				Description: "Set of domain names that match the given filter.",
-				Computed:    true,
+				Description: strings.Join([]string{
+					"List of domains that match the given filter.",
+					"Each domain has a metadata object that can be accessed via is dot notation.",
+					"e.g. `domains[0].metadata.labels[\"common/env\"]`",
+				}, "\n"),
+				Computed: true,
 			},
 			"domain_labels": schema.StringAttribute{
 				Description: "Labels filter. Only domains that contain these labels will be returned as data source output.",

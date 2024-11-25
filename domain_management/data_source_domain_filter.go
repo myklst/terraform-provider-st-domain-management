@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
@@ -124,6 +125,13 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 	domains, err := d.client.GetDomains(jsonData)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read domains: %s", err))
+		return
+	}
+
+	if len(domains) == 0 {
+		resp.Diagnostics.AddWarning("No domains found. Please try again with the correct domain filters.", "")
+		state.Domains = types.DynamicNull()
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 		return
 	}
 

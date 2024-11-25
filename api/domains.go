@@ -144,7 +144,7 @@ func (c *Client) DeleteAnnotations(domain string, payload []byte) (resp []byte, 
 	return body, nil
 }
 
-func (c *Client) GetDomains(payload []byte) (resp []*Domain, err error) {
+func (c *Client) GetDomains(payload []byte) (resp []byte, err error) {
 	url, err := url.Parse(fmt.Sprintf(GetDomain, c.Endpoint))
 	if err != nil {
 		return nil, err
@@ -180,16 +180,15 @@ func (c *Client) GetDomains(payload []byte) (resp []*Domain, err error) {
 		return nil, err
 	}
 
-	respData := DomainResponse{}
-	err = json.Unmarshal(body, &respData)
-	if err != nil {
+	commonResp := commonResponse{}
+	if err = json.Unmarshal(body, &commonResp); err != nil {
 		return nil, err
 	}
 
-	return respData.Domains, nil
+	return commonResp.Dt, nil
 }
 
-func (c *Client) GetDomainsFull(payload []byte) (resp []*DomainFull, err error) {
+func (c *Client) GetDomainsFull(payload []byte) (resp []byte, err error) {
 	url, err := url.Parse(fmt.Sprintf(GetDomainsFull, c.Endpoint))
 	if err != nil {
 		return nil, err
@@ -225,13 +224,12 @@ func (c *Client) GetDomainsFull(payload []byte) (resp []*DomainFull, err error) 
 		return nil, err
 	}
 
-	respData := DomainFullResponse{}
-	err = json.Unmarshal(body, &respData)
-	if err != nil {
+	commonResp := commonResponse{}
+	if err = json.Unmarshal(body, &commonResp); err != nil {
 		return nil, err
 	}
 
-	return respData.DomainsFull, nil
+	return commonResp.Dt, nil
 }
 
 func handleErrorResponse(resp *http.Response) error {

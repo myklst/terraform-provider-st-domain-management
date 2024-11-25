@@ -1,5 +1,7 @@
 package api
 
+import "encoding/json"
+
 type Metadata struct {
 	Labels      map[string]interface{} `json:"labels"`
 	Annotations map[string]interface{} `json:"annotations"`
@@ -26,9 +28,14 @@ type DomainResponse struct {
 }
 
 type DomainFullResponse struct {
-	DomainsFull []*DomainFull `json:"dt"`
+	DomainsFull []*DomainFull
 }
 
 type AnnotationsResponse struct {
 	Domain Domain `json:"dt"`
+}
+
+type commonResponse struct {
+	Dt  json.RawMessage
+	Err json.RawMessage
 }

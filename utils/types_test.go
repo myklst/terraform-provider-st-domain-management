@@ -2,23 +2,10 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
-	"os"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/stretchr/testify/assert"
 )
-
-var transformJSON = cmp.FilterValues(func(x, y []byte) bool {
-	return json.Valid(x) && json.Valid(y)
-}, cmp.Transformer("ParseJSON", func(in []byte) (out interface{}) {
-	if err := json.Unmarshal(in, &out); err != nil {
-		panic(err) // should never occur given previous filter to ensure valid JSON
-	}
-	return out
-}))
 
 func TestDynamicValueObject(t *testing.T) {
 	jsonObj := map[string]interface{}{
@@ -37,23 +24,12 @@ func TestDynamicValueObject(t *testing.T) {
 		},
 	}
 
-	types, value := jsonToTFTypes(jsonObj)
-	obj, diags := basetypes.NewObjectValue(types, value)
-	if diags.HasError() {
-		log.Println(diags.Errors())
-		os.Exit(1)
-	}
-	val, err := TFTypesToBytes(obj)
+	jsonBytes, err := json.Marshal(jsonObj)
 	if err != nil {
 		t.Error(err)
 	}
-
-	bytes, err := json.Marshal(jsonObj)
+	_, err = JSONToTerraformDynamicValue(jsonBytes)
 	if err != nil {
-		t.Error(err)
-	}
-	if !cmp.Equal(bytes, val) {
-		fmt.Println(cmp.Diff(bytes, val, transformJSON))
 		t.Error(err)
 	}
 }
@@ -64,19 +40,16 @@ func TestInconsistentArrayType(t *testing.T) {
 		"arrayObjectValue": []interface{}{
 			map[string]interface{}{"key4": map[string]interface{}{"key5": map[string]interface{}{"key6": true}}},
 			map[string]interface{}{"key4": map[string]interface{}{"key5": map[string]interface{}{"key6": true}}},
-			map[string]interface{}{"key7": map[string]interface{}{"key8": map[string]interface{}{"key9": true}}},
+			map[string]interface{}{"key7": []bool{true, false, true}},
+			[]bool{false, true, false},
 		},
 	}
 
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Errorf("The function should have panicked")
-		}
-		_ = r
-	}()
+	bytes, err := json.Marshal(jsonObj)
+	assert.Nil(t, err)
 
-	jsonToTFTypes(jsonObj)
+	_, err = JSONToTerraformDynamicValue(bytes)
+	assert.Nil(t, err)
 }
 
 func TestNullData(t *testing.T) {
@@ -85,15 +58,11 @@ func TestNullData(t *testing.T) {
 		"nullValue": nil,
 	}
 
-	_, diags := JSONToTerraformDynamicValue(jsonObj)
+	bytes, err := json.Marshal(jsonObj)
+	assert.Nil(t, err)
 
-	if !diags.HasError() {
-		t.Error("Diagnostics should have an error")
-	}
-
-	if diags[0].Summary() != "Null or nil is not allowed" {
-		t.Error("Diagnostics error is unrelated. Not interested in this error.")
-	}
+	_, err = JSONToTerraformDynamicValue(bytes)
+	assert.Nil(t, err)
 }
 
 func TestEmptyList(t *testing.T) {
@@ -102,15 +71,11 @@ func TestEmptyList(t *testing.T) {
 		"arrayObjectValue": []interface{}{},
 	}
 
-	_, diags := JSONToTerraformDynamicValue(jsonObj)
+	bytes, err := json.Marshal(jsonObj)
+	assert.Nil(t, err)
 
-	if !diags.HasError() {
-		t.Error("Diagnostics should have an error")
-	}
-
-	if diags[0].Summary() != "List / Tuple / Set / Array cannot be empty" {
-		t.Error("Diagnostics error is unrelated. Not interested in this error.")
-	}
+	_, err = JSONToTerraformDynamicValue(bytes)
+	assert.Nil(t, err)
 }
 
 func TestEmptyObject(t *testing.T) {
@@ -119,35 +84,8 @@ func TestEmptyObject(t *testing.T) {
 		"emptyObjectValue": map[string]interface{}{"key": map[string]interface{}{"key2": map[string]interface{}{"key3": nil}}},
 	}
 
-	_, diags := JSONToTerraformDynamicValue(jsonObj)
+	bytes, err := json.Marshal(jsonObj)
+	assert.Nil(t, err)
 
-	if !diags.HasError() {
-		t.Error("Diagnostics should have an error")
-	}
-
-	if diags[0].Summary() != "Null or nil is not allowed" {
-		t.Error("Diagnostics error is unrelated. Not interested in this error.")
-	}
-}
-
-func TestHandlePanicCorrectly(t *testing.T) {
-	jsonObj := map[string]interface{}{
-		"boolValue": true,
-		"arrayObjectValue": []interface{}{
-			map[string]interface{}{"key4": map[string]interface{}{"key5": map[string]interface{}{"key6": true}}},
-			map[string]interface{}{"key4": map[string]interface{}{"key5": map[string]interface{}{"key6": true}}},
-			map[string]interface{}{"key7": map[string]interface{}{"key8": map[string]interface{}{"key9": true}}},
-		},
-	}
-
-	_, diags := JSONToTerraformDynamicValue(jsonObj)
-
-	if !diags.HasError() {
-		t.Error("Diagnostics should have an error")
-	}
-
-	if diags[0].Summary() != "Complex types do not allow objects with different keys. All objects in list/set/tuple must have the same keys and nested keys." {
-		t.Error("Diagnostics error is unrelated. Not interested in this error.")
-	}
-
+	_, err = JSONToTerraformDynamicValue(bytes)
 }

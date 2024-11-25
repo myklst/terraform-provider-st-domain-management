@@ -3,7 +3,6 @@ module github.com/myklst/terraform-provider-st-domain-management
 go 1.19
 
 require (
-	github.com/google/go-cmp v0.6.0
 	github.com/hashicorp/terraform-plugin-docs v0.18.0
 	github.com/hashicorp/terraform-plugin-framework v1.8.0
 	github.com/hashicorp/terraform-plugin-framework-jsontypes v0.1.0
@@ -46,6 +45,7 @@ require (
 	github.com/zclconf/go-cty v1.14.4 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/mod v0.17.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
 

@@ -13,7 +13,7 @@ type Filters struct {
 	Exclude basetypes.DynamicValue `tfsdk:"exclude" json:"exclude"`
 }
 
-var MetadataAttributes = map[string]attr.Type{
+var FilterAttributes = map[string]attr.Type{
 	"include": types.DynamicType,
 	"exclude": types.DynamicType,
 }

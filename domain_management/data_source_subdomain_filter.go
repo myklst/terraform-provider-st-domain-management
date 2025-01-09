@@ -71,18 +71,18 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 			},
 			"domain_labels": schema.ObjectAttribute{
 				Description:    "Labels filter. Only domains that contain these labels will be returned as data source output.",
-				AttributeTypes: internal.MetadataAttributes,
+				AttributeTypes: internal.FilterAttributes,
 				Required:       true,
 			},
 			"domain_annotations": schema.ObjectAttribute{
 				Description:    "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
-				AttributeTypes: internal.MetadataAttributes,
+				AttributeTypes: internal.FilterAttributes,
 				Required:       false,
 				Optional:       true,
 			},
 			"subdomain_labels": schema.ObjectAttribute{
 				Description:    "Subdomain labels filter. Only subdomains that contain these labels will be returned as data source output",
-				AttributeTypes: internal.MetadataAttributes,
+				AttributeTypes: internal.FilterAttributes,
 				Required:       true,
 			},
 		},

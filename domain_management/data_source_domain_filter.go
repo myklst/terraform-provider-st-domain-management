@@ -9,61 +9,10 @@ import (
 	"github.com/myklst/terraform-provider-st-domain-management/domain_management/internal"
 	"github.com/myklst/terraform-provider-st-domain-management/utils"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
-
-type domainFilterDataSourceModel struct {
-	DomainLabels      internal.Filters       `tfsdk:"domain_labels" json:"domain_labels"`
-	DomainAnnotations *internal.Filters      `tfsdk:"domain_annotations" json:"domain_annotations"`
-	Domains           basetypes.DynamicValue `tfsdk:"domains" json:"domains"`
-}
-
-func (d *domainFilterDataSourceModel) Payload() api.DomainReq {
-	var err error
-
-	includeLabels, err := utils.TFTypesToJSON(d.DomainLabels.Include)
-	if err != nil {
-		panic(err)
-	}
-
-	excludeLabels, err := utils.TFTypesToJSON(d.DomainLabels.Exclude)
-	if err != nil {
-		panic(err)
-	}
-
-	filter := api.Metadata{
-		Labels: includeLabels,
-	}
-
-	excludeFilter := api.Metadata{
-		Labels: excludeLabels,
-	}
-
-	if d.DomainAnnotations != nil {
-		includeAnnotations, err := utils.TFTypesToJSON(d.DomainAnnotations.Include)
-		if err != nil {
-			panic(err)
-		}
-		filter.Annotations = includeAnnotations
-
-		excludeAnnotations, err := utils.TFTypesToJSON(d.DomainAnnotations.Exclude)
-		if err != nil {
-			panic(err)
-		}
-		excludeFilter.Annotations = excludeAnnotations
-	}
-
-	request := api.DomainReq{
-		Filter:  filter,
-		Exclude: excludeFilter,
-	}
-
-	return request
-}
 
 func NewDomainDataSource() datasource.DataSource {
 	return &domainFilterDataSource{}
@@ -91,20 +40,14 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 			},
 			"domain_labels": schema.ObjectAttribute{
 				Description: "Labels filter. Only domains that contain these labels will be returned as data source output.",
-				AttributeTypes: map[string]attr.Type{
-					"include": types.DynamicType,
-					"exclude": types.DynamicType,
-				},
-				Required: true,
+				AttributeTypes: internal.MetadataAttributes,
+				Required:       true,
 			},
 			"domain_annotations": schema.ObjectAttribute{
-				Description: "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
-				AttributeTypes: map[string]attr.Type{
-					"include": types.DynamicType,
-					"exclude": types.DynamicType,
-				},
-				Required: false,
-				Optional: true,
+				Description:    "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
+				AttributeTypes: internal.MetadataAttributes,
+				Required:       false,
+				Optional:       true,
 			},
 		},
 	}
@@ -131,7 +74,7 @@ func (d *domainFilterDataSource) Configure(ctx context.Context, req datasource.C
 }
 
 func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state domainFilterDataSourceModel
+	var state internal.DomainFilterDataSourceModel
 
 	diags := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)

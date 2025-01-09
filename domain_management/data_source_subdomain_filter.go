@@ -11,7 +11,6 @@ import (
 	"github.com/myklst/terraform-provider-st-domain-management/domain_management/internal"
 	"github.com/myklst/terraform-provider-st-domain-management/utils"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -43,49 +42,6 @@ type subdomainFilterDataSourceModel struct {
 	Domains           basetypes.DynamicValue `tfsdk:"domains" json:"domains"`
 }
 
-func (d *subdomainFilterDataSourceModel) Payload() api.DomainReq {
-	var err error
-
-	includeLabels, err := utils.TFTypesToJSON(d.DomainLabels.Include)
-	if err != nil {
-		panic(err)
-	}
-
-	excludeLabels, err := utils.TFTypesToJSON(d.DomainLabels.Exclude)
-	if err != nil {
-		panic(err)
-	}
-
-	filter := api.Metadata{
-		Labels: includeLabels,
-	}
-
-	excludeFilter := api.Metadata{
-		Labels: excludeLabels,
-	}
-
-	if d.DomainAnnotations != nil {
-		includeAnnotations, err := utils.TFTypesToJSON(d.DomainAnnotations.Include)
-		if err != nil {
-			panic(err)
-		}
-		filter.Annotations = includeAnnotations
-
-		excludeAnnotations, err := utils.TFTypesToJSON(d.DomainAnnotations.Exclude)
-		if err != nil {
-			panic(err)
-		}
-		excludeFilter.Annotations = excludeAnnotations
-	}
-
-	request := api.DomainReq{
-		Filter:  filter,
-		Exclude: excludeFilter,
-	}
-
-	return request
-}
-
 func NewSubdomainDataSource() datasource.DataSource {
 	return &subdomainFilterDataSource{}
 }
@@ -114,29 +70,20 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 				Computed: true,
 			},
 			"domain_labels": schema.ObjectAttribute{
-				Description: "Labels filter. Only domains that contain these labels will be returned as data source output.",
-				AttributeTypes: map[string]attr.Type{
-					"include": types.DynamicType,
-					"exclude": types.DynamicType,
-				},
-				Required: true,
+				Description:    "Labels filter. Only domains that contain these labels will be returned as data source output.",
+				AttributeTypes: internal.MetadataAttributes,
+				Required:       true,
 			},
 			"domain_annotations": schema.ObjectAttribute{
-				Description: "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
-				AttributeTypes: map[string]attr.Type{
-					"include": types.DynamicType,
-					"exclude": types.DynamicType,
-				},
-				Required: false,
-				Optional: true,
+				Description:    "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
+				AttributeTypes: internal.MetadataAttributes,
+				Required:       false,
+				Optional:       true,
 			},
 			"subdomain_labels": schema.ObjectAttribute{
-				Description: "Subdomain labels filter. Only subdomains that contain these labels will be returned as data source output",
-				AttributeTypes: map[string]attr.Type{
-					"include": types.DynamicType,
-					"exclude": types.DynamicType,
-				},
-				Required: true,
+				Description:    "Subdomain labels filter. Only subdomains that contain these labels will be returned as data source output",
+				AttributeTypes: internal.MetadataAttributes,
+				Required:       true,
 			},
 		},
 	}
@@ -171,7 +118,11 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
-	domainsFullBytes, err := d.client.GetDomainsFull(state.Payload())
+	var domainRequest = internal.DomainFilterDataSourceModel{
+		DomainLabels:      state.DomainLabels,
+		DomainAnnotations: state.DomainAnnotations,
+	}
+	domainsFullBytes, err := d.client.GetDomainsFull(domainRequest.Payload())
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read domains, got error: %s", err))
 		return

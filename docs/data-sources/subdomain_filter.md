@@ -31,12 +31,12 @@ data "st-domain-management_subdomain_filter" "example" {
 
 ### Required
 
-- `domain_labels` (String) Domain labels filter. Only domains that contain these labels will be returned as data source output.
-- `subdomain_labels` (String) Subdomain labels filter. Only subdomains that contain these labels will be returned as data source output
+- `domain_labels` (Object) Labels filter. Only domains that contain these labels will be returned as data source output. (see [below for nested schema](#nestedatt--domain_labels))
+- `subdomain_labels` (Object) Subdomain labels filter. Only subdomains that contain these labels will be returned as data source output (see [below for nested schema](#nestedatt--subdomain_labels))
 
 ### Optional
 
-- `domain_annotations` (String) Annotations filter. Only domains that contain these annotations will be returned as data source output.
+- `domain_annotations` (Object) Annotations filter. Only domains that contain these annotations will be returned as data source output. (see [below for nested schema](#nestedatt--domain_annotations))
 
 ### Read-Only
 
@@ -46,3 +46,29 @@ Each subdomain in the list has name fqdn, and a labels object that can be access
 e.g. `domains[0].subdomains[0].labels["common/env"]`
 Additionally, each domain has a metadata object that can be accessed via its dot notation.
 e.g. `domains[0].metadata.labels["common/env"]`
+
+<a id="nestedatt--domain_labels"></a>
+### Nested Schema for `domain_labels`
+
+Required:
+
+- `exclude` (Dynamic)
+- `include` (Dynamic)
+
+
+<a id="nestedatt--subdomain_labels"></a>
+### Nested Schema for `subdomain_labels`
+
+Required:
+
+- `exclude` (Dynamic)
+- `include` (Dynamic)
+
+
+<a id="nestedatt--domain_annotations"></a>
+### Nested Schema for `domain_annotations`
+
+Optional:
+
+- `exclude` (Dynamic)
+- `include` (Dynamic)

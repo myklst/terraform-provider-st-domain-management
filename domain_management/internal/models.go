@@ -8,22 +8,28 @@ import (
 	"github.com/myklst/terraform-provider-st-domain-management/utils"
 )
 
+// Generic Filter type with the Include and Exclude syntax.
 type Filters struct {
 	Include basetypes.DynamicValue `tfsdk:"include" json:"include"`
 	Exclude basetypes.DynamicValue `tfsdk:"exclude" json:"exclude"`
 }
 
+// The Terraform Types version of Filters. Used in schema implementation.
 var FilterAttributes = map[string]attr.Type{
 	"include": types.DynamicType,
 	"exclude": types.DynamicType,
 }
 
+// During Terraform Read phase, Terraform attribute values will be unmarshaled
+// into this DomainFilter struct. Usage is shared between GetDomains() and
+// GetDomainsFull().
 type DomainFilterDataSourceModel struct {
 	DomainLabels      Filters                `tfsdk:"domain_labels" json:"domain_labels"`
 	DomainAnnotations *Filters               `tfsdk:"domain_annotations" json:"domain_annotations"`
 	Domains           basetypes.DynamicValue `tfsdk:"domains" json:"domains"`
 }
 
+// Returns a result that is suitable for use in api requests.
 func (d DomainFilterDataSourceModel) Payload() api.DomainReq {
 	var err error
 

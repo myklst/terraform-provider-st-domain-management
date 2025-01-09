@@ -39,12 +39,18 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 				Computed: true,
 			},
 			"domain_labels": schema.ObjectAttribute{
-				Description: "Labels filter. Only domains that contain these labels will be returned as data source output.",
+				Description: strings.Join([]string{
+					"Domains that contain the labels in include will be returned as data source output.",
+					"Domains with labels that match those in exclude will be ignored",
+				}, "\n"),
 				AttributeTypes: internal.FilterAttributes,
 				Required:       true,
 			},
 			"domain_annotations": schema.ObjectAttribute{
-				Description:    "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
+				Description: strings.Join([]string{
+					"Domains that contain the annotations in include will be returned as data source output.",
+					"Domains with annotations that match those in exclude will be ignored",
+				}, "\n"),
 				AttributeTypes: internal.FilterAttributes,
 				Required:       false,
 				Optional:       true,

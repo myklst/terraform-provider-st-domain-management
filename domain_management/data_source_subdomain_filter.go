@@ -101,6 +101,8 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
+	// Create a temporary domain filter data source
+	// so that we can re-use the request.Payload() method.
 	var domainRequest = internal.DomainFilterDataSourceModel{
 		DomainLabels:      state.DomainLabels,
 		DomainAnnotations: state.DomainAnnotations,
@@ -111,6 +113,7 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
+	// Early return if no domains are found.
 	if len(domainsFullBytes) == 0 {
 		resp.Diagnostics.AddWarning("No domains found. Please try again with the correct domain filters.", "")
 		state.Domains = types.DynamicNull()
@@ -152,6 +155,8 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
+// Filters domains according to its subdomain contents. This cannot be done at
+// the api level as there is no api support for filtering subdomains
 func domainFullFilter(httpResp []api.DomainFull, subdomainLabels internal.Filters) (domainsFull []api.DomainFull, diags diag.Diagnostics) {
 	domainsFull = make([]api.DomainFull, 0)
 	for _, domain := range httpResp {
@@ -192,12 +197,11 @@ func domainFullFilter(httpResp []api.DomainFull, subdomainLabels internal.Filter
 	return domainsFull, nil
 }
 
+// Filters a subdomain depending on whether the subdomains from the api response
+// matches with what is declared in subdomains include and exclude data source
+// user input. If the subdomain does not pass the filter, a nil subdomain is
+// returned. Else a pointer to a valid subdomain is returned
 func subdomainsFilter(subdomainResp api.Subdomain, labelsFilter internal.Filters) (*api.Subdomain, error) {
-	// To determine whether the subdomain labels satisfies the filter in the data source input,
-	// a three step process is performed.
-	// 1. Unmarshal the filter input into a map[string]interface
-	// 2. For each map key, use the map key to access the labels map[string] from the api response
-	// 3. Ensure that the map[string] from data source and the map[string] from api response is the same
 	if len(subdomainResp.Metadata.Labels) == 0 {
 		return nil, nil
 	}
@@ -212,7 +216,7 @@ func subdomainsFilter(subdomainResp api.Subdomain, labelsFilter internal.Filters
 		apiResponse[k] = subdomainResp.Metadata.Labels[k]
 	}
 
-	// Return nil if subdomain labels filter's map contents (data source user input)
+	// Return nil if subdomain labels filter's include contents
 	// is not found in the subdomain from the api response
 	if !reflect.DeepEqual(filter, apiResponse) {
 		return nil, nil
@@ -239,7 +243,7 @@ func subdomainsFilter(subdomainResp api.Subdomain, labelsFilter internal.Filters
 		apiResponse[k] = subdomainResp.Metadata.Labels[k]
 	}
 
-	// Return nil if subdomain labels exclude's map contents (data source user input)
+	// Return nil if subdomain labels filter exclude contents
 	// is found in the subdomain from the api response
 	if reflect.DeepEqual(exclude, apiResponse) {
 		return nil, nil

@@ -8,13 +8,13 @@ import (
 	"strings"
 
 	"github.com/myklst/terraform-provider-st-domain-management/api"
+	"github.com/myklst/terraform-provider-st-domain-management/domain_management/internal"
 	"github.com/myklst/terraform-provider-st-domain-management/utils"
 
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -37,41 +37,53 @@ type domainFull struct {
 }
 
 type subdomainFilterDataSourceModel struct {
-	DomainLabels      jsontypes.Normalized   `tfsdk:"domain_labels" json:"domain_labels"`
-	DomainAnnotations jsontypes.Normalized   `tfsdk:"domain_annotations" json:"domain_annotations"`
-	SubdomainLabels   jsontypes.Normalized   `tfsdk:"subdomain_labels" json:"subdomains_labels"`
+	DomainLabels      internal.Filters       `tfsdk:"domain_labels" json:"domain_labels"`
+	DomainAnnotations *internal.Filters      `tfsdk:"domain_annotations" json:"domain_annotations"`
+	SubdomainLabels   internal.Filters       `tfsdk:"subdomain_labels" json:"subdomains_labels"`
 	Domains           basetypes.DynamicValue `tfsdk:"domains" json:"domains"`
 }
 
-func (d *subdomainFilterDataSourceModel) Payload() ([]byte, diag.Diagnostics) {
-	domains := map[string]any{}
-	labels := map[string]any{}
-	annotations := map[string]any{}
+func (d *subdomainFilterDataSourceModel) Payload() api.DomainReq {
+	var err error
 
-	diags := d.DomainLabels.Unmarshal(&labels)
-	if diags.HasError() {
-		return nil, diags
-	}
-	domains["labels"] = labels
-
-	if !d.DomainAnnotations.IsNull() {
-		diags = d.DomainAnnotations.Unmarshal(&annotations)
-		if diags.HasError() {
-			return nil, diags
-		}
-		domains["annotations"] = annotations
-	}
-
-	payload := map[string]any{}
-	payload["metadata"] = domains
-
-	payloadBytes, err := json.Marshal(payload)
+	includeLabels, err := utils.TFTypesToJSON(d.DomainLabels.Include)
 	if err != nil {
-		diags.AddError("Cannot marshal payload. ", err.Error())
-		return nil, diags
+		panic(err)
 	}
 
-	return payloadBytes, nil
+	excludeLabels, err := utils.TFTypesToJSON(d.DomainLabels.Exclude)
+	if err != nil {
+		panic(err)
+	}
+
+	filter := api.Metadata{
+		Labels: includeLabels,
+	}
+
+	excludeFilter := api.Metadata{
+		Labels: excludeLabels,
+	}
+
+	if d.DomainAnnotations != nil {
+		includeAnnotations, err := utils.TFTypesToJSON(d.DomainAnnotations.Include)
+		if err != nil {
+			panic(err)
+		}
+		filter.Annotations = includeAnnotations
+
+		excludeAnnotations, err := utils.TFTypesToJSON(d.DomainAnnotations.Exclude)
+		if err != nil {
+			panic(err)
+		}
+		excludeFilter.Annotations = excludeAnnotations
+	}
+
+	request := api.DomainReq{
+		Filter:  filter,
+		Exclude: excludeFilter,
+	}
+
+	return request
 }
 
 func NewSubdomainDataSource() datasource.DataSource {
@@ -101,29 +113,30 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 				}, "\n"),
 				Computed: true,
 			},
-			"domain_labels": schema.StringAttribute{
-				Description: "Domain labels filter. Only domains that contain these labels will be returned as data source output.",
-				CustomType:  jsontypes.NormalizedType{},
-				Required:    true,
-				Validators: []validator.String{
-					utils.MustBeMapOfString{},
+			"domain_labels": schema.ObjectAttribute{
+				Description: "Labels filter. Only domains that contain these labels will be returned as data source output.",
+				AttributeTypes: map[string]attr.Type{
+					"include": types.DynamicType,
+					"exclude": types.DynamicType,
 				},
+				Required: true,
 			},
-			"domain_annotations": schema.StringAttribute{
+			"domain_annotations": schema.ObjectAttribute{
 				Description: "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
-				CustomType:  jsontypes.NormalizedType{},
-				Optional:    true,
-				Validators: []validator.String{
-					utils.MustBeMapOfString{},
+				AttributeTypes: map[string]attr.Type{
+					"include": types.DynamicType,
+					"exclude": types.DynamicType,
 				},
+				Required: false,
+				Optional: true,
 			},
-			"subdomain_labels": schema.StringAttribute{
+			"subdomain_labels": schema.ObjectAttribute{
 				Description: "Subdomain labels filter. Only subdomains that contain these labels will be returned as data source output",
-				CustomType:  jsontypes.NormalizedType{},
-				Required:    true,
-				Validators: []validator.String{
-					utils.MustBeMapOfString{},
+				AttributeTypes: map[string]attr.Type{
+					"include": types.DynamicType,
+					"exclude": types.DynamicType,
 				},
+				Required: true,
 			},
 		},
 	}
@@ -158,12 +171,7 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
-	payload, diags := state.Payload()
-	if diags.HasError() {
-		return
-	}
-
-	domainsFullBytes, err := d.client.GetDomainsFull(payload)
+	domainsFullBytes, err := d.client.GetDomainsFull(state.Payload())
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read domains, got error: %s", err))
 		return
@@ -176,14 +184,14 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
-	domainsFull := []*api.DomainFull{}
+	domainsFull := []api.DomainFull{}
 	err = json.Unmarshal(domainsFullBytes, &domainsFull)
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
-	domains, diags := domainFullFilter(domainsFull, state.SubdomainLabels.ValueString())
+	domains, diags := domainFullFilter(domainsFull, state.SubdomainLabels)
 	if diags.HasError() {
 		return
 	}
@@ -210,16 +218,17 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func domainFullFilter(httpResp []*api.DomainFull, subdomainLabels string) (domainsFull []domainFull, diags diag.Diagnostics) {
+// This cannot be done at the api level as there is no api support for filtering subdomains
+func domainFullFilter(httpResp []api.DomainFull, subdomainLabels internal.Filters) (domainsFull []domainFull, diags diag.Diagnostics) {
 	domainsFull = make([]domainFull, 0)
 	for _, domainResp := range httpResp {
 		subdomains := []subdomain{}
-		for _, subdomainResp := range domainResp.Subdomains {
-			if len(subdomainResp.Metadata.Labels) == 0 {
+		for _, subdomain := range domainResp.Subdomains {
+			if len(subdomain.Metadata.Labels) == 0 {
 				continue
 			}
 
-			subdomain, err := subdomainsFilter(subdomainResp, domainResp.Domain, subdomainLabels)
+			subdomain, err := subdomainsFilter(subdomain, subdomainLabels)
 			if err != nil {
 				diags = append(diags, diag.NewErrorDiagnostic("Cannot convert subdomain api model to Terraform", err.Error()))
 				return
@@ -229,6 +238,7 @@ func domainFullFilter(httpResp []*api.DomainFull, subdomainLabels string) (domai
 				continue
 			}
 
+			subdomain.Fqdn = strings.Join([]string{subdomain.Name, domainResp.Domain}, ".")
 			subdomains = append(subdomains, *subdomain)
 		}
 
@@ -251,14 +261,17 @@ func domainFullFilter(httpResp []*api.DomainFull, subdomainLabels string) (domai
 	return domainsFull, nil
 }
 
-func subdomainsFilter(subdomainResp *api.Subdomain, domain string, subdomainLabelsFilter string) (*subdomain, error) {
+func subdomainsFilter(subdomainResp api.Subdomain, labelsFilter internal.Filters) (*subdomain, error) {
 	// To determine whether the subdomain labels satisfies the filter in the data source input,
 	// a three step process is performed.
 	// 1. Unmarshal the filter input into a map[string]interface
 	// 2. For each map key, use the map key to access the labels map[string] from the api response
 	// 3. Ensure that the map[string] from data source and the map[string] from api response is the same
-	filter := map[string]interface{}{}
-	err := json.Unmarshal([]byte(subdomainLabelsFilter), &filter)
+	if len(subdomainResp.Metadata.Labels) == 0 {
+		return nil, nil
+	}
+
+	filter, err := utils.TFTypesToJSON(labelsFilter.Include)
 	if err != nil {
 		return nil, err
 	}
@@ -274,9 +287,30 @@ func subdomainsFilter(subdomainResp *api.Subdomain, domain string, subdomainLabe
 		return nil, nil
 	}
 
-	return &subdomain{
+	subdomain := &subdomain{
 		Name:   subdomainResp.Name,
-		Fqdn:   strings.Join([]string{subdomainResp.Name, domain}, "."),
 		Labels: subdomainResp.Metadata.Labels,
-	}, nil
+	}
+
+	if labelsFilter.Exclude.IsNull() {
+		return subdomain, nil
+	}
+
+	exclude, err := utils.TFTypesToJSON(labelsFilter.Exclude)
+	if err != nil {
+		return nil, err
+	}
+
+	apiResponse = map[string]interface{}{}
+	for k := range exclude {
+		apiResponse[k] = subdomainResp.Metadata.Labels[k]
+	}
+
+	// Return nil if subdomain labels exclude's map contents (data source user input)
+	// is found in the subdomain from the api response
+	if reflect.DeepEqual(exclude, apiResponse) {
+		return nil, nil
+	}
+
+	return subdomain, nil
 }

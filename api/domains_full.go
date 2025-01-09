@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	GetDomain = "%s/domains"
+	GetDomainsFull = "%s/domains/full"
 )
 
-func (c *Client) GetDomains(request DomainReq) (resp []byte, err error) {
-	url, err := url.Parse(fmt.Sprintf(GetDomain, c.Endpoint))
+func (c *Client) GetDomainsFull(request DomainReq) (resp []byte, err error) {
+	url, err := url.Parse(fmt.Sprintf(GetDomainsFull, c.Endpoint))
 	if err != nil {
 		return nil, err
 	}

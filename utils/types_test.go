@@ -90,3 +90,5 @@ func TestEmptyObject(t *testing.T) {
 	_, err = JSONToTerraformDynamicValue(bytes)
 	assert.Nil(t, err)
 }
+
+// Add tests for the other way of conversion

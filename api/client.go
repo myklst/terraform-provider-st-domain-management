@@ -1,10 +1,13 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -96,4 +99,24 @@ func (c *Client) execute(req *http.Request) (resp *http.Response, err error) {
 
 	resp, err = c.client.Do(req)
 	return
+}
+
+func handleErrorResponse(resp *http.Response) error {
+	var body []byte
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	jsonBody := map[string]interface{}{}
+	err = json.Unmarshal(body, &jsonBody)
+	if err != nil {
+		return err
+	}
+
+	return fmt.Errorf(
+		"Got response %s: %s",
+		strconv.Itoa(resp.StatusCode),
+		jsonBody["err"],
+	)
 }

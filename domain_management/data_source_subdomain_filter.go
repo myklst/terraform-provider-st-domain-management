@@ -18,23 +18,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-type subdomain struct {
-	Labels map[string]interface{} `tfsdk:"labels" json:"labels"`
-	Name   string                 `tfsdk:"name" json:"name"`
-	Fqdn   string                 `tfsdk:"fqdn" json:"fqdn"`
-}
-
-type domainDetails struct {
-	Labels      map[string]interface{} `tfsdk:"labels" json:"labels"`
-	Annotations map[string]interface{} `tfsdk:"annotations" json:"annotations"`
-	Name        string                 `tfsdk:"name" json:"domain"`
-}
-
-type domainFull struct {
-	Domain     domainDetails `tfsdk:"domain" json:"domain"`
-	Subdomains []subdomain   `tfsdk:"subdomains" json:"subdomains"`
-}
-
 type subdomainFilterDataSourceModel struct {
 	DomainLabels      internal.Filters       `tfsdk:"domain_labels" json:"domain_labels"`
 	DomainAnnotations *internal.Filters      `tfsdk:"domain_annotations" json:"domain_annotations"`
@@ -169,12 +152,11 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-// This cannot be done at the api level as there is no api support for filtering subdomains
-func domainFullFilter(httpResp []api.DomainFull, subdomainLabels internal.Filters) (domainsFull []domainFull, diags diag.Diagnostics) {
-	domainsFull = make([]domainFull, 0)
-	for _, domainResp := range httpResp {
-		subdomains := []subdomain{}
-		for _, subdomain := range domainResp.Subdomains {
+func domainFullFilter(httpResp []api.DomainFull, subdomainLabels internal.Filters) (domainsFull []api.DomainFull, diags diag.Diagnostics) {
+	domainsFull = make([]api.DomainFull, 0)
+	for _, domain := range httpResp {
+		subdomains := []api.Subdomain{}
+		for _, subdomain := range domain.Subdomains {
 			if len(subdomain.Metadata.Labels) == 0 {
 				continue
 			}
@@ -189,7 +171,7 @@ func domainFullFilter(httpResp []api.DomainFull, subdomainLabels internal.Filter
 				continue
 			}
 
-			subdomain.Fqdn = strings.Join([]string{subdomain.Name, domainResp.Domain}, ".")
+			subdomain.Fqdn = strings.Join([]string{subdomain.Name, domain.Domain}, ".")
 			subdomains = append(subdomains, *subdomain)
 		}
 
@@ -197,22 +179,20 @@ func domainFullFilter(httpResp []api.DomainFull, subdomainLabels internal.Filter
 			continue
 		}
 
-		domainDetail := domainDetails{
-			Name:        domainResp.Domain,
-			Labels:      domainResp.Metadata.Labels,
-			Annotations: domainResp.Metadata.Annotations,
-		}
-
-		domain := domainFull{
-			Domain:     domainDetail,
+		domainFull := api.DomainFull{
+			Domain: domain.Domain,
+			Metadata: api.Metadata{
+				Labels:      domain.Metadata.Labels,
+				Annotations: domain.Metadata.Annotations,
+			},
 			Subdomains: subdomains,
 		}
-		domainsFull = append(domainsFull, domain)
+		domainsFull = append(domainsFull, domainFull)
 	}
 	return domainsFull, nil
 }
 
-func subdomainsFilter(subdomainResp api.Subdomain, labelsFilter internal.Filters) (*subdomain, error) {
+func subdomainsFilter(subdomainResp api.Subdomain, labelsFilter internal.Filters) (*api.Subdomain, error) {
 	// To determine whether the subdomain labels satisfies the filter in the data source input,
 	// a three step process is performed.
 	// 1. Unmarshal the filter input into a map[string]interface
@@ -238,9 +218,11 @@ func subdomainsFilter(subdomainResp api.Subdomain, labelsFilter internal.Filters
 		return nil, nil
 	}
 
-	subdomain := &subdomain{
-		Name:   subdomainResp.Name,
-		Labels: subdomainResp.Metadata.Labels,
+	subdomain := &api.Subdomain{
+		Name: subdomainResp.Name,
+		Metadata: api.Metadata{
+			Labels: subdomainResp.Metadata.Labels,
+		},
 	}
 
 	if labelsFilter.Exclude.IsNull() {

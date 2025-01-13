@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/myklst/terraform-provider-st-domain-management/api"
@@ -103,7 +102,7 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 
 	// Create a temporary domain filter data source
 	// so that we can re-use the request.Payload() method.
-	var domainRequest = internal.DomainFilterDataSourceModel{
+	domainRequest := internal.DomainFilterDataSourceModel{
 		DomainLabels:      state.DomainLabels,
 		DomainAnnotations: state.DomainAnnotations,
 	}
@@ -166,18 +165,18 @@ func domainFullFilter(httpResp []api.DomainFull, subdomainLabels internal.Filter
 				continue
 			}
 
-			subdomain, err := subdomainsFilter(subdomain, subdomainLabels)
+			subdomainFiltered, err := subdomainsFilter(subdomain, subdomainLabels)
 			if err != nil {
 				diags = append(diags, diag.NewErrorDiagnostic("Cannot convert subdomain api model to Terraform", err.Error()))
 				return
 			}
 
-			if subdomain == nil {
+			if subdomainFiltered == nil {
 				continue
 			}
 
-			subdomain.Fqdn = strings.Join([]string{subdomain.Name, domain.Domain}, ".")
-			subdomains = append(subdomains, *subdomain)
+			subdomainFiltered.Fqdn = strings.Join([]string{subdomainFiltered.Name, domain.Domain}, ".")
+			subdomains = append(subdomains, *subdomainFiltered)
 		}
 
 		if len(subdomains) == 0 {
@@ -211,15 +210,21 @@ func subdomainsFilter(subdomainResp api.Subdomain, labelsFilter internal.Filters
 		return nil, err
 	}
 
-	apiResponse := map[string]interface{}{}
-	for k := range filter {
-		apiResponse[k] = subdomainResp.Metadata.Labels[k]
+	exclude, err := utils.TFTypesToJSON(labelsFilter.Exclude)
+	if err != nil {
+		return nil, err
 	}
 
-	// Return nil if subdomain labels filter's include contents
-	// is not found in the subdomain from the api response
-	if !reflect.DeepEqual(filter, apiResponse) {
-		return nil, nil
+	if !labelsFilter.Include.IsNull() {
+		if !utils.IsMapSubset(subdomainResp.Metadata.Labels, filter) {
+			return nil, nil
+		}
+	}
+
+	if !labelsFilter.Exclude.IsNull() {
+		if utils.IsMapSubset(subdomainResp.Metadata.Labels, exclude) {
+			return nil, nil
+		}
 	}
 
 	subdomain := &api.Subdomain{
@@ -227,26 +232,6 @@ func subdomainsFilter(subdomainResp api.Subdomain, labelsFilter internal.Filters
 		Metadata: api.Metadata{
 			Labels: subdomainResp.Metadata.Labels,
 		},
-	}
-
-	if labelsFilter.Exclude.IsNull() {
-		return subdomain, nil
-	}
-
-	exclude, err := utils.TFTypesToJSON(labelsFilter.Exclude)
-	if err != nil {
-		return nil, err
-	}
-
-	apiResponse = map[string]interface{}{}
-	for k := range exclude {
-		apiResponse[k] = subdomainResp.Metadata.Labels[k]
-	}
-
-	// Return nil if subdomain labels filter exclude contents
-	// is found in the subdomain from the api response
-	if reflect.DeepEqual(exclude, apiResponse) {
-		return nil, nil
 	}
 
 	return subdomain, nil

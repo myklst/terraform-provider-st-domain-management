@@ -30,7 +30,7 @@ type DomainFilterDataSourceModel struct {
 }
 
 // Returns a result that is suitable for use in api requests.
-func (d DomainFilterDataSourceModel) Payload() api.DomainReq {
+func (d *DomainFilterDataSourceModel) Payload() api.DomainReq {
 	var err error
 
 	includeLabels, err := utils.TFTypesToJSON(d.DomainLabels.Include)

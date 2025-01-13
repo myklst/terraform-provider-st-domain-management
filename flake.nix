@@ -46,14 +46,6 @@
             };
           };
 
-          apps.docs = {
-            program = pkgs.writeShellApplication {
-              name = "generate-terraform-providers-documentation";
-              runtimeInputs = with pkgs; [ terraform-plugin-docs ];
-              text = "tfplugindocs generate --provider-name st-domain-management";
-            };
-          };
-
           apps.lint = {
             program = pkgs.writeShellApplication {
               name = "golangci-lint";

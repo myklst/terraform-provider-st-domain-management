@@ -88,7 +88,7 @@ func jsonToTFTypes(b []byte) (attr.Type, attr.Value, error) {
 	}
 }
 
-func TFTypesToJSON(d types.Dynamic) (map[string]any, error) {
+func TFTypesToJSON(d types.Dynamic) (map[string]interface{}, error) {
 	if d.IsNull() || d.IsUnknown() {
 		return nil, nil
 	}

@@ -81,16 +81,7 @@ func formatURL(base string) (string, error) {
 		return "", fmt.Errorf("invalid endpoint. expected format: scheme://host")
 	}
 
-	var finalPath string
-	finalPath = fmt.Sprintf("%s://%s", endpoint.Scheme, endpoint.Host)
-
-	// Some endpoints may have an extra path
-	// Check for the existence of a path in
-	if endpoint.Path != "" {
-		finalPath = fmt.Sprintf("%s%s", finalPath, endpoint.Path)
-	}
-
-	return finalPath, err
+	return endpoint.String(), err
 }
 
 func (c *Client) execute(req *http.Request) (resp *http.Response, err error) {

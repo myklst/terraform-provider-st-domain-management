@@ -2,18 +2,18 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 )
 
-const (
-	GetDomainsFull = "%s/domains/full"
-)
-
 func (c *Client) GetDomainsFull(request DomainReq) (resp []byte, err error) {
-	url, err := url.Parse(fmt.Sprintf(GetDomainsFull, c.Endpoint))
+	path, err := url.JoinPath(c.Endpoint, "domains", "full")
+	if err != nil {
+		return nil, err
+	}
+
+	url, err := url.Parse(path)
 	if err != nil {
 		return nil, err
 	}

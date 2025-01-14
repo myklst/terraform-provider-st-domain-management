@@ -92,7 +92,6 @@ func TestEmptyObject(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-// Add tests for the other way of conversion
 func TestTFTypesToJSON(t *testing.T) {
 	require := require.New(t)
 	jsonObjBytes, err := json.Marshal(jsonObj)
@@ -106,5 +105,3 @@ func TestTFTypesToJSON(t *testing.T) {
 
 	assert.Equal(t, jsonObj, actualJson)
 }
-
-// TODO Add tests for the other way of conversion

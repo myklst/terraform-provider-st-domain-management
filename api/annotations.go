@@ -12,7 +12,7 @@ import (
 )
 
 func (c *Client) CreateAnnotations(domain string, payload string) (resp []byte, err error) {
-	path, err := url.JoinPath(c.Endpoint, "domains" , domain, "annotations")
+	path, err := url.JoinPath(c.Endpoint, "domains", domain, "annotations")
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (c *Client) CreateAnnotations(domain string, payload string) (resp []byte, 
 }
 
 func (c *Client) ReadAnnotations(domain string, payload []byte) (resp map[string]any, err error) {
-	path, err := url.JoinPath(c.Endpoint, "domains" , domain, "annotations")
+	path, err := url.JoinPath(c.Endpoint, "domains", domain, "annotations")
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (c *Client) ReadAnnotations(domain string, payload []byte) (resp map[string
 }
 
 func (c *Client) UpdateAnnotations(domain string, payload []byte) (resp []byte, err error) {
-	path, err := url.JoinPath(c.Endpoint, "domains" , domain, "annotations")
+	path, err := url.JoinPath(c.Endpoint, "domains", domain, "annotations")
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (c *Client) UpdateAnnotations(domain string, payload []byte) (resp []byte, 
 }
 
 func (c *Client) DeleteAnnotations(domain string, payload []byte) (resp []byte, err error) {
-	path, err := url.JoinPath(c.Endpoint, "domains" , domain, "annotations")
+	path, err := url.JoinPath(c.Endpoint, "domains", domain, "annotations")
 	if err != nil {
 		return nil, err
 	}

@@ -86,7 +86,7 @@ func (c *Client) ReadAnnotations(domain string, payload []byte) (resp map[string
 		return nil, err
 	}
 
-	if metadata.Domain.Metadata.Annotations != nil {
+	if metadata.Domain.Metadata.Annotations == nil {
 		return nil, nil
 	}
 

@@ -52,17 +52,21 @@ func (d *DomainFilterDataSourceModel) Payload() api.DomainReq {
 	}
 
 	if d.DomainAnnotations != nil {
-		includeAnnotations, err := utils.TFTypesToJSON(d.DomainAnnotations.Include)
-		if err != nil {
-			panic(err)
+		if !d.DomainLabels.Include.IsNull() {
+			includeAnnotations, err := utils.TFTypesToJSON(d.DomainAnnotations.Include)
+			if err != nil {
+				panic(err)
+			}
+			filter.Annotations = includeAnnotations
 		}
-		filter.Annotations = includeAnnotations
 
-		excludeAnnotations, err := utils.TFTypesToJSON(d.DomainAnnotations.Exclude)
-		if err != nil {
-			panic(err)
+		if !d.DomainAnnotations.Exclude.IsNull() {
+			excludeAnnotations, err := utils.TFTypesToJSON(d.DomainAnnotations.Exclude)
+			if err != nil {
+				panic(err)
+			}
+			excludeFilter.Annotations = excludeAnnotations
 		}
-		excludeFilter.Annotations = excludeAnnotations
 	}
 
 	request := api.DomainReq{

@@ -36,7 +36,7 @@ func (request *DomainReq) ToURLQuery() (url.Values, error) {
 
 type Metadata struct {
 	Labels      map[string]interface{} `json:"labels"`
-	Annotations map[string]interface{} `json:"annotations"`
+	Annotations map[string]interface{} `json:"annotations,omitempty"`
 }
 
 type Subdomain struct {

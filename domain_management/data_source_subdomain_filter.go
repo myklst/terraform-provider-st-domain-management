@@ -215,15 +215,22 @@ func subdomainsFilter(subdomainResp api.Subdomain, labelsFilter internal.Filters
 		return nil, err
 	}
 
-	if !labelsFilter.Include.IsNull() {
+	// Check on length of map. Don't use dynamicValue.IsNull because
+	// an empty object is not null.
+	if len(filter) != 0 {
 		if !utils.IsMapSubset(subdomainResp.Metadata.Labels, filter) {
 			return nil, nil
 		}
 	}
 
-	if !labelsFilter.Exclude.IsNull() {
-		if utils.IsMapSubset(subdomainResp.Metadata.Labels, exclude) {
-			return nil, nil
+	if len(exclude) != 0 {
+		// When handling exclude, each entry in the exclude map needs to be checked
+		// against api response one by one, because IsMapSubset does length checking
+		for k, v := range exclude {
+			// Return nil if exclude IS FOUND in labels from api response
+			if utils.IsMapSubset(subdomainResp.Metadata.Labels, map[string]any{k: v}) {
+				return nil, nil
+			}
 		}
 	}
 

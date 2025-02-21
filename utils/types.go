@@ -87,3 +87,100 @@ func jsonToTFTypes(b []byte) (attr.Type, attr.Value, error) {
 		return nil, nil, fmt.Errorf("Unhandled type: %T", v)
 	}
 }
+
+func TFTypesToJSON(d types.Dynamic) (map[string]interface{}, error) {
+	if d.IsNull() || d.IsUnknown() {
+		return nil, nil
+	}
+	bytes, err := attrValueToJSON(d.UnderlyingValue())
+	if err != nil {
+		return nil, err
+	}
+	obj := map[string]any{}
+	if err = json.Unmarshal(bytes, &obj); err != nil {
+		return nil, err
+	}
+	return obj, nil
+}
+
+func TFTypesToBytes(d types.Dynamic) ([]byte, error) {
+	if d.IsNull() || d.IsUnknown() {
+		return nil, nil
+	}
+	return attrValueToJSON(d.UnderlyingValue())
+}
+
+func attrValueToJSON(val attr.Value) ([]byte, error) {
+	if val.IsNull() || val.IsUnknown() {
+		return json.Marshal(nil)
+	}
+	switch value := val.(type) {
+	case types.Bool:
+		return json.Marshal(value.ValueBool())
+	case types.String:
+		return json.Marshal(value.ValueString())
+	case types.Int64:
+		return json.Marshal(value.ValueInt64())
+	case types.Float64:
+		return json.Marshal(value.ValueFloat64())
+	case types.Number:
+		v, _ := value.ValueBigFloat().Float64()
+		return json.Marshal(v)
+	case types.List:
+		l, err := attrListToJSON(value.Elements())
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(l)
+	case types.Set:
+		l, err := attrListToJSON(value.Elements())
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(l)
+	case types.Tuple:
+		l, err := attrListToJSON(value.Elements())
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(l)
+	case types.Map:
+		m, err := attrMapToJSON(value.Elements())
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(m)
+	case types.Object:
+		m, err := attrMapToJSON(value.Attributes())
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(m)
+	default:
+		return nil, fmt.Errorf("Unhandled type: %T", value)
+	}
+}
+
+func attrListToJSON(in []attr.Value) ([]json.RawMessage, error) {
+	l := []json.RawMessage{}
+	for _, v := range in {
+		vv, err := attrValueToJSON(v)
+		if err != nil {
+			return nil, err
+		}
+		l = append(l, json.RawMessage(vv))
+	}
+	return l, nil
+}
+
+func attrMapToJSON(in map[string]attr.Value) (map[string]json.RawMessage, error) {
+	m := map[string]json.RawMessage{}
+	for k, v := range in {
+		vv, err := attrValueToJSON(v)
+		if err != nil {
+			return nil, err
+		}
+		m[k] = json.RawMessage(vv)
+	}
+	return m, nil
+}

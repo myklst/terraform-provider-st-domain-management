@@ -7,8 +7,8 @@ import (
 	"net/url"
 )
 
-func (c *Client) GetDomains(request DomainReq) (resp []byte, err error) {
-	path, err := url.JoinPath(c.Endpoint, "domains")
+func (c *Client) GetDomainsFull(request DomainReq) (resp []byte, err error) {
+	path, err := url.JoinPath(c.Endpoint, "domains", "full")
 	if err != nil {
 		return nil, err
 	}

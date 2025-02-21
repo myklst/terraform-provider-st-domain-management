@@ -27,14 +27,33 @@ data "st-domain-management_domain_filter" "example" {
 
 ### Required
 
-- `domain_labels` (String) Labels filter. Only domains that contain these labels will be returned as data source output.
+- `domain_labels` (Object) Domains that contain the labels in include will be returned as data source output.
+Domains with labels that match those in exclude will be ignored (see [below for nested schema](#nestedatt--domain_labels))
 
 ### Optional
 
-- `domain_annotations` (String) Annotations filter. Only domains that contain these annotations will be returned as data source output.
+- `domain_annotations` (Object) Domains that contain the annotations in include will be returned as data source output.
+Domains with annotations that match those in exclude will be ignored (see [below for nested schema](#nestedatt--domain_annotations))
 
 ### Read-Only
 
 - `domains` (Dynamic) List of domains that match the given filter.
 Each domain has a metadata object that can be accessed via is dot notation.
 e.g. `domains[0].metadata.labels["common/env"]`
+
+<a id="nestedatt--domain_labels"></a>
+### Nested Schema for `domain_labels`
+
+Required:
+
+- `exclude` (Dynamic)
+- `include` (Dynamic)
+
+
+<a id="nestedatt--domain_annotations"></a>
+### Nested Schema for `domain_annotations`
+
+Optional:
+
+- `exclude` (Dynamic)
+- `include` (Dynamic)

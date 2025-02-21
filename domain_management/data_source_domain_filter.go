@@ -2,51 +2,17 @@ package domain_management
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/myklst/terraform-provider-st-domain-management/api"
+	"github.com/myklst/terraform-provider-st-domain-management/domain_management/internal"
 	"github.com/myklst/terraform-provider-st-domain-management/utils"
 
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
-
-type domainFilterDataSourceModel struct {
-	DomainLabels      jsontypes.Normalized   `tfsdk:"domain_labels" json:"domain_labels"`
-	DomainAnnotations jsontypes.Normalized   `tfsdk:"domain_annotations" json:"domain_annotations"`
-	Domains           basetypes.DynamicValue `tfsdk:"domains" json:"domains"`
-}
-
-func (d *domainFilterDataSourceModel) Payload() (payload map[string]any) {
-	domains := map[string]any{}
-	labels := map[string]any{}
-	annotations := map[string]any{}
-
-	err := d.DomainLabels.Unmarshal(&labels)
-	if err != nil {
-		panic(err)
-	}
-	domains["labels"] = labels
-
-	if !d.DomainAnnotations.IsNull() {
-		err := d.DomainAnnotations.Unmarshal(&annotations)
-		if err != nil {
-			panic(err)
-		}
-		domains["annotations"] = annotations
-	}
-
-	payload = map[string]any{}
-	payload["metadata"] = domains
-
-	return
-}
 
 func NewDomainDataSource() datasource.DataSource {
 	return &domainFilterDataSource{}
@@ -72,21 +38,22 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 				}, "\n"),
 				Computed: true,
 			},
-			"domain_labels": schema.StringAttribute{
-				Description: "Labels filter. Only domains that contain these labels will be returned as data source output.",
-				CustomType:  jsontypes.NormalizedType{},
-				Required:    true,
-				Validators: []validator.String{
-					utils.MustBeMapOfString{},
-				},
+			"domain_labels": schema.ObjectAttribute{
+				Description: strings.Join([]string{
+					"Domains that contain the labels in include will be returned as data source output.",
+					"Domains with labels that match those in exclude will be ignored",
+				}, "\n"),
+				AttributeTypes: internal.FilterAttributes,
+				Required:       true,
 			},
-			"domain_annotations": schema.StringAttribute{
-				Description: "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
-				CustomType:  jsontypes.NormalizedType{},
-				Optional:    true,
-				Validators: []validator.String{
-					utils.MustBeMapOfString{},
-				},
+			"domain_annotations": schema.ObjectAttribute{
+				Description: strings.Join([]string{
+					"Domains that contain the annotations in include will be returned as data source output.",
+					"Domains with annotations that match those in exclude will be ignored",
+				}, "\n"),
+				AttributeTypes: internal.FilterAttributes,
+				Required:       false,
+				Optional:       true,
 			},
 		},
 	}
@@ -113,7 +80,7 @@ func (d *domainFilterDataSource) Configure(ctx context.Context, req datasource.C
 }
 
 func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state domainFilterDataSourceModel
+	var state internal.DomainFilterDataSourceModel
 
 	diags := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -121,13 +88,7 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	jsonData, err := json.Marshal(state.Payload())
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
-
-	domains, err := d.client.GetDomains(jsonData)
+	domains, err := d.client.GetDomains(state.Payload())
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read domains: %s", err))
 		return

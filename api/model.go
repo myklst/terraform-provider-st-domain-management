@@ -40,7 +40,7 @@ type Metadata struct {
 }
 
 type Subdomain struct {
-	Fqdn     string
+	Fqdn     string   `json:"fqdn,omitempty"`
 	Name     string   `json:"name"`
 	Metadata Metadata `json:"metadata"`
 }

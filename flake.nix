@@ -35,7 +35,7 @@
             program = pkgs.writeShellApplication {
               name = "domain-management-custom-provider-test";
               runtimeInputs = with pkgs; [
-                go
+                go_1_24
               ];
               text = ''
                 go mod tidy

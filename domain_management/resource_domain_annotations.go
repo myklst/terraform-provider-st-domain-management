@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
-	"golang.org/x/exp/maps"
+	"maps"
+	"slices"
 
 	"github.com/myklst/terraform-provider-st-domain-management/api"
 	"github.com/myklst/terraform-provider-st-domain-management/utils"
@@ -95,7 +95,7 @@ func (r *domainAnnotationsResource) ImportState(ctx context.Context, req resourc
 		return
 	}
 
-	strAnnotation, err := json.Marshal(maps.Keys(imported.Annotations))
+	strAnnotation, err := json.Marshal(slices.Collect(maps.Keys(imported.Annotations)))
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -169,7 +169,7 @@ func (r *domainAnnotationsResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	payload, err := json.Marshal(maps.Keys(annotations))
+	payload, err := json.Marshal(slices.Collect(maps.Keys(annotations)))
 	if err != nil {
 		resp.Diagnostics.Append(diag.NewErrorDiagnostic("Unmarshal Error", err.Error()))
 		return
@@ -356,7 +356,7 @@ func (r *domainAnnotationsResource) Delete(ctx context.Context, req resource.Del
 	}
 
 	// The payload is a json object with keys and values. For annotation deletion, we only need an array of keys.
-	payload, _ := json.Marshal(maps.Keys(stateObj))
+	payload, _ := json.Marshal(slices.Collect(maps.Keys(stateObj)))
 
 	httpResp, err := r.client.DeleteAnnotations(state.Domain.ValueString(), payload)
 	if err != nil {

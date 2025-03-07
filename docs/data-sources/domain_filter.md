@@ -14,11 +14,14 @@ Query domains that satisfy the filter using Terraform Data Source.
 
 ```terraform
 data "st-domain-management_domain_filter" "example" {
-  domain_labels = jsonencode({
-    "common/brand"   = "brand-A"
-    "common/status"  = "new"
-    "common/project" = "project-B"
-  })
+  domain_labels = {
+    include = {
+      "common/brand" = "a"
+    }
+    exclude = {
+      "common/status" = "deleted"
+    }
+  }
 }
 ```
 

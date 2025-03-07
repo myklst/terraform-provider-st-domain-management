@@ -3,10 +3,8 @@
 
   inputs = {
     devshell.url = "github:numtide/devshell";
-    flake-parts.url = "https://flakehub.com/f/hercules-ci/flake-parts/0.1.350.tar.gz";
-    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1.721821.tar.gz";
-    nixpkgs-23-11.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2311.559232.tar.gz";
-    nixpkgs-24-05.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2405.636838.tar.gz";
+    flake-parts.url = "https://flakehub.com/f/hercules-ci/flake-parts/0.1.*.tar.gz";
+    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/=0.1.755230.tar.gz";
     systems.url = "github:nix-systems/default";
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
@@ -37,7 +35,7 @@
             program = pkgs.writeShellApplication {
               name = "domain-management-custom-provider-test";
               runtimeInputs = with pkgs; [
-                go
+                go_1_24
               ];
               text = ''
                 go mod tidy
@@ -56,9 +54,12 @@
 
           devshells.default = {
             packages = with pkgs; [
-              go
-              gotools
+              delve
+              gopls
+              go_1_24
+              go-tools
               terraform
+              golangci-lint
               terraform-docs
               terraform-plugin-docs
             ];

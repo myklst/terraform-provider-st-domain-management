@@ -1,11 +1,19 @@
 data "st-domain-management_subdomain_filter" "example" {
-  domain_labels = jsonencode({
-    "common/brand"   = "brand-A"
-    "common/status"  = "new"
-    "common/project" = "project-B"
-  })
-  subdomain_labels = jsonencode({
-    "module-specific-label/labelA" = true
-    "module-specific-label/labelB" = ["a", "b", "c"]
-  })
+  domain_labels = {
+    include = {
+      "common/brand" = "sige" # Data source will return only domains that belong to sige AND
+      "common/env"   = "test" # domains that are used in testing env only.
+    }
+    exclude = {
+      "common/status" = "deleted" # Data source filter will ignore any domains whose status label is deleted 
+    }
+  }
+
+  subdomain_labels = {
+    include = {
+      "uncommon/testing" = true # Only return subdomains that contains this label and this value
+    }
+    exclude = { # Don't exclude any labels
+    }
+  }
 }

@@ -1,13 +1,12 @@
 module github.com/myklst/terraform-provider-st-domain-management
 
-go 1.20
+go 1.24
 
 require (
 	github.com/hashicorp/terraform-plugin-docs v0.18.0
 	github.com/hashicorp/terraform-plugin-framework v1.8.0
 	github.com/hashicorp/terraform-plugin-framework-jsontypes v0.1.0
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
 	gomodules.xyz/jsonpatch/v2 v2.4.0
 )
 
@@ -44,6 +43,7 @@ require (
 	github.com/yuin/goldmark-meta v1.1.0 // indirect
 	github.com/zclconf/go-cty v1.14.4 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
+	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect

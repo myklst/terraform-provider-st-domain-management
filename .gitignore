@@ -22,8 +22,14 @@ override.tf.json
 #################
 # Module Specific
 #################
-terraform-provider-domain-management
+terraform-provider-st-domain-management
+dist
+bin
+examples/basic*
+test*
+tmp
+TEST.md
 
-# Flake 
+# Flake
 .direnv
 data

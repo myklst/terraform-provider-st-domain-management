@@ -18,9 +18,9 @@ import (
 )
 
 type subdomainFilterDataSourceModel struct {
-	DomainLabels      internal.Filters       `tfsdk:"domain_labels" json:"domain_labels"`
+	DomainLabels      *internal.Filters      `tfsdk:"domain_labels" json:"domain_labels"`
 	DomainAnnotations *internal.Filters      `tfsdk:"domain_annotations" json:"domain_annotations"`
-	SubdomainLabels   internal.Filters       `tfsdk:"subdomain_labels" json:"subdomains_labels"`
+	SubdomainLabels   *internal.Filters      `tfsdk:"subdomain_labels" json:"subdomains_labels"`
 	Domains           basetypes.DynamicValue `tfsdk:"domains" json:"domains"`
 }
 
@@ -54,7 +54,8 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 			"domain_labels": schema.ObjectAttribute{
 				Description:    "Labels filter. Only domains that contain these labels will be returned as data source output.",
 				AttributeTypes: internal.FilterAttributes,
-				Required:       true,
+				Required:       false,
+				Optional:       true,
 			},
 			"domain_annotations": schema.ObjectAttribute{
 				Description:    "Annotations filter. Only domains that contain these annotations will be returned as data source output.",
@@ -65,7 +66,8 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 			"subdomain_labels": schema.ObjectAttribute{
 				Description:    "Subdomain labels filter. Only subdomains that contain these labels will be returned as data source output",
 				AttributeTypes: internal.FilterAttributes,
-				Required:       true,
+				Required:       false,
+				Optional:       true,
 			},
 		},
 	}
@@ -112,14 +114,6 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
-	// Early return if no domains are found.
-	if len(domainsFullBytes) == 0 {
-		resp.Diagnostics.AddWarning("No domains found. Please try again with the correct domain filters.", "")
-		state.Domains = types.DynamicNull()
-		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-		return
-	}
-
 	domainsFull := []api.DomainFull{}
 	err = json.Unmarshal(domainsFullBytes, &domainsFull)
 	if err != nil {
@@ -127,19 +121,17 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
-	domains, diags := domainFullFilter(domainsFull, state.SubdomainLabels)
-	if diags.HasError() {
-		return
-	}
+	// TODO Determine if need to give warning if no subdomains found
 
-	if len(domains) == 0 {
-		resp.Diagnostics.AddWarning("No subdomains found. Please try again with the correct subdomain filters.", "")
+	// Early return if no domains are found.
+	if len(domainsFull) == 0 {
+		resp.Diagnostics.AddWarning("No domains found.", "Please try again with the correct domain filters.")
 		state.Domains = types.DynamicNull()
 		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 		return
 	}
 
-	bytes, err := json.Marshal(domains)
+	bytes, err := json.Marshal(domainsFull)
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
@@ -154,24 +146,12 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-// Filters domains according to its subdomain contents. This cannot be done at
-// the api level as there is no api support for filtering subdomains
 func domainFullFilter(httpResp []api.DomainFull, subdomainLabels internal.Filters) (domainsFull []api.DomainFull, diags diag.Diagnostics) {
 	domainsFull = make([]api.DomainFull, 0)
 	for _, domain := range httpResp {
 		subdomains := []api.Subdomain{}
 		for _, subdomain := range domain.Subdomains {
 			if len(subdomain.Metadata.Labels) == 0 {
-				continue
-			}
-
-			subdomainFiltered, err := subdomainsFilter(subdomain, subdomainLabels)
-			if err != nil {
-				diags = append(diags, diag.NewErrorDiagnostic("Cannot convert subdomain api model to Terraform", err.Error()))
-				return
-			}
-
-			if subdomainFiltered == nil {
 				continue
 			}
 
@@ -194,52 +174,4 @@ func domainFullFilter(httpResp []api.DomainFull, subdomainLabels internal.Filter
 		domainsFull = append(domainsFull, domainFull)
 	}
 	return domainsFull, nil
-}
-
-// Filters a subdomain depending on whether the subdomains from the api response
-// matches with what is declared in subdomains include and exclude data source
-// user input. If the subdomain does not pass the filter, a nil subdomain is
-// returned. Else a pointer to a valid subdomain is returned
-func subdomainsFilter(subdomainResp api.Subdomain, labelsFilter internal.Filters) (*api.Subdomain, error) {
-	if len(subdomainResp.Metadata.Labels) == 0 {
-		return nil, nil
-	}
-
-	filter, err := utils.TFTypesToJSON(labelsFilter.Include)
-	if err != nil {
-		return nil, err
-	}
-
-	exclude, err := utils.TFTypesToJSON(labelsFilter.Exclude)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check on length of map. Don't use dynamicValue.IsNull because
-	// an empty object is not null.
-	if len(filter) != 0 {
-		if !utils.IsMapSubset(subdomainResp.Metadata.Labels, filter) {
-			return nil, nil
-		}
-	}
-
-	if len(exclude) != 0 {
-		// When handling exclude, each entry in the exclude map needs to be checked
-		// against api response one by one, because IsMapSubset does length checking
-		for k, v := range exclude {
-			// Return nil if exclude IS FOUND in labels from api response
-			if utils.IsMapSubset(subdomainResp.Metadata.Labels, map[string]any{k: v}) {
-				return nil, nil
-			}
-		}
-	}
-
-	subdomain := &api.Subdomain{
-		Name: subdomainResp.Name,
-		Metadata: api.Metadata{
-			Labels: subdomainResp.Metadata.Labels,
-		},
-	}
-
-	return subdomain, nil
 }

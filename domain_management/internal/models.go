@@ -5,7 +5,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/myklst/terraform-provider-st-domain-management/api"
-	"github.com/myklst/terraform-provider-st-domain-management/utils"
 )
 
 // Generic Filter type with the Include and Exclude syntax.
@@ -24,54 +23,57 @@ var FilterAttributes = map[string]attr.Type{
 // into this DomainFilter struct. Usage is shared between GetDomains() and
 // GetDomainsFull().
 type DomainFilterDataSourceModel struct {
-	DomainLabels      Filters                `tfsdk:"domain_labels" json:"domain_labels"`
+	DomainLabels      *Filters               `tfsdk:"domain_labels" json:"domain_labels"`
 	DomainAnnotations *Filters               `tfsdk:"domain_annotations" json:"domain_annotations"`
 	Domains           basetypes.DynamicValue `tfsdk:"domains" json:"domains"`
 }
 
 // Returns a result that is suitable for use in api requests.
 func (d *DomainFilterDataSourceModel) Payload() api.DomainReq {
-	var err error
+	// var err error
 
-	includeLabels, err := utils.TFTypesToJSON(d.DomainLabels.Include)
-	if err != nil {
-		panic(err)
-	}
+	// includeLabels := map[string]interface{}{}
+	// excludeLabels := map[string]interface{}{}
+	// includeAnnotations := map[string]interface{}{}
+	// excludeAnnotations := map[string]interface{}{}
 
-	excludeLabels, err := utils.TFTypesToJSON(d.DomainLabels.Exclude)
-	if err != nil {
-		panic(err)
-	}
+	// if d.DomainLabels != nil {
+	// 	if !d.DomainLabels.Include.IsNull() {
+	// 		includeLabels, err = utils.TFTypesToJSON(d.DomainLabels.Include)
+	// 		if err != nil {
+	// 			panic(err)
+	// 		}
+	// 	}
 
-	filter := api.Metadata{
-		Labels: includeLabels,
-	}
+	// 	if !d.DomainLabels.Exclude.IsNull() {
+	// 		excludeLabels, err = utils.TFTypesToJSON(d.DomainLabels.Exclude)
+	// 		if err != nil {
+	// 			panic(err)
+	// 		}
+	// 	}
+	// }
 
-	excludeFilter := api.Metadata{
-		Labels: excludeLabels,
-	}
+	// if d.DomainAnnotations != nil {
+	// 	if !d.DomainAnnotations.Include.IsNull() {
+	// 		includeAnnotations, err = utils.TFTypesToJSON(d.DomainAnnotations.Include)
+	// 		if err != nil {
+	// 			panic(err)
+	// 		}
+	// 	}
 
-	if d.DomainAnnotations != nil {
-		if !d.DomainAnnotations.Include.IsNull() {
-			includeAnnotations, err := utils.TFTypesToJSON(d.DomainAnnotations.Include)
-			if err != nil {
-				panic(err)
-			}
-			filter.Annotations = includeAnnotations
-		}
-
-		if !d.DomainAnnotations.Exclude.IsNull() {
-			excludeAnnotations, err := utils.TFTypesToJSON(d.DomainAnnotations.Exclude)
-			if err != nil {
-				panic(err)
-			}
-			excludeFilter.Annotations = excludeAnnotations
-		}
-	}
+	// 	if !d.DomainAnnotations.Exclude.IsNull() {
+	// 		excludeAnnotations, err = utils.TFTypesToJSON(d.DomainAnnotations.Exclude)
+	// 		if err != nil {
+	// 			panic(err)
+	// 		}
+	// 	}
+	// }
 
 	request := api.DomainReq{
-		Filter:  filter,
-		Exclude: excludeFilter,
+		FilterDomains: &api.IncludeExclude{
+			Include: nil,
+			Exclude: nil,
+		},
 	}
 
 	return request

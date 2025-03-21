@@ -6,36 +6,45 @@ import (
 )
 
 type DomainReq struct {
-	Filter  Metadata
-	Exclude Metadata
+	FilterDomains    *IncludeExclude `json:"filter_domains,omitempty"`
+	FilterSubdomains *IncludeExclude `json:"filter_subdomains,omitempty"`
 }
 
 func (request *DomainReq) ToURLQuery() (url.Values, error) {
-	filter := map[string]interface{}{
-		"metadata": request.Filter,
-	}
-	exclude := map[string]interface{}{
-		"metadata": request.Exclude,
-	}
-
-	filterBytes, err := json.Marshal(filter)
-	if err != nil {
-		return nil, err
-	}
-	excludeBytes, err := json.Marshal(exclude)
-	if err != nil {
-		return nil, err
-	}
-
 	v := url.Values{}
-	v.Set("filter", string(filterBytes))
-	v.Set("exclude", string(excludeBytes))
+
+	if request.FilterDomains != nil {
+		filterDomains, err := json.Marshal(request.FilterDomains)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(filterDomains) > 2 {
+			v.Set("filter_domains", string(filterDomains))
+		}
+	}
+
+	if request.FilterSubdomains != nil {
+		filterSubdomains, err := json.Marshal(request.FilterSubdomains)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(filterSubdomains) > 2 {
+			v.Set("filter_domains", string(filterSubdomains))
+		}
+	}
 
 	return v, nil
 }
 
+type IncludeExclude struct {
+	Include *Metadata `json:"include,omitempty"`
+	Exclude *Metadata `json:"exclude,omitempty"`
+}
+
 type Metadata struct {
-	Labels      map[string]interface{} `json:"labels"`
+	Labels      map[string]interface{} `json:"labels,omitempty"`
 	Annotations map[string]interface{} `json:"annotations,omitempty"`
 }
 

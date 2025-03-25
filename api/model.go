@@ -31,7 +31,7 @@ func (request *DomainReq) ToURLQuery() (url.Values, error) {
 		}
 
 		if len(filterSubdomains) > 2 {
-			v.Set("filter_domains", string(filterSubdomains))
+			v.Set("filter_subdomains", string(filterSubdomains))
 		}
 	}
 

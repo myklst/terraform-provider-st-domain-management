@@ -39,8 +39,16 @@ func (request *DomainReq) ToURLQuery() (url.Values, error) {
 }
 
 type IncludeExclude struct {
-	Include *Metadata `json:"include,omitempty"`
-	Exclude *Metadata `json:"exclude,omitempty"`
+	Include *Include `json:"include,omitempty"`
+	Exclude *Exclude `json:"exclude,omitempty"`
+}
+
+type Include struct {
+	Metadata *Metadata `json:"metadata" binding:"omitempty"`
+}
+
+type Exclude struct {
+	Metadata *Metadata `json:"metadata" binding:"omitempty"`
 }
 
 type Metadata struct {

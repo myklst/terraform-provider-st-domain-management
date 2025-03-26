@@ -104,9 +104,10 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 
 	// Create a temporary domain filter data source
 	// so that we can re-use the request.Payload() method.
-	domainRequest := internal.DomainFilterDataSourceModel{
+	domainRequest := internal.FullDomainFilterDataSourceModel{
 		DomainLabels:      state.DomainLabels,
 		DomainAnnotations: state.DomainAnnotations,
+		SubdomainLabels:   state.SubdomainLabels,
 	}
 	domainsFullBytes, err := d.client.GetDomainsFull(domainRequest.Payload())
 	if err != nil {
@@ -121,13 +122,16 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
-	// TODO Determine if need to give warning if no subdomains found
-
 	// Early return if no domains are found.
 	if len(domainsFull) == 0 {
 		resp.Diagnostics.AddWarning("No domains found.", "Please try again with the correct domain filters.")
 		state.Domains = types.DynamicNull()
 		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+		return
+	}
+
+	domainsFull, diags = processDomainFull(domainsFull)
+	if diags.HasError() {
 		return
 	}
 
@@ -146,7 +150,7 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func domainFullFilter(httpResp []api.DomainFull, subdomainLabels internal.Filters) (domainsFull []api.DomainFull, diags diag.Diagnostics) {
+func processDomainFull(httpResp []api.DomainFull) (domainsFull []api.DomainFull, diags diag.Diagnostics) {
 	domainsFull = make([]api.DomainFull, 0)
 	for _, domain := range httpResp {
 		subdomains := []api.Subdomain{}
@@ -155,11 +159,15 @@ func domainFullFilter(httpResp []api.DomainFull, subdomainLabels internal.Filter
 				continue
 			}
 
-			subdomainFiltered.Fqdn = strings.Join([]string{subdomainFiltered.Name, domain.Domain}, ".")
-			subdomains = append(subdomains, *subdomainFiltered)
+			subdomain.Fqdn = strings.Join([]string{subdomain.Name, domain.Domain}, ".")
+			subdomains = append(subdomains, subdomain)
 		}
 
 		if len(subdomains) == 0 {
+			diags.AddWarning(
+				fmt.Sprintf("%s has no subdomains", domain.Domain),
+				"Please try again with the correct filter",
+			)
 			continue
 		}
 

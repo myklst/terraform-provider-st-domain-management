@@ -6,33 +6,24 @@ import (
 )
 
 type DomainReq struct {
-	FilterDomains    *IncludeExclude `json:"filter_domains,omitempty"`
-	FilterSubdomains *IncludeExclude `json:"filter_subdomains,omitempty"`
+	FilterDomains    *IncludeExclude `json:"domains,omitempty"`
+	FilterSubdomains *IncludeExclude `json:"subdomains,omitempty"`
 }
 
 func (request *DomainReq) ToURLQuery() (url.Values, error) {
 	v := url.Values{}
 
-	if request.FilterDomains != nil {
-		filterDomains, err := json.Marshal(request.FilterDomains)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(filterDomains) > 2 {
-			v.Set("filter_domains", string(filterDomains))
-		}
+	if request == nil {
+		return v, nil
 	}
 
-	if request.FilterSubdomains != nil {
-		filterSubdomains, err := json.Marshal(request.FilterSubdomains)
-		if err != nil {
-			return nil, err
-		}
+	filter, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
 
-		if len(filterSubdomains) > 2 {
-			v.Set("filter_subdomains", string(filterSubdomains))
-		}
+	if len(filter) > 0 {
+		v.Set("filter", string(filter))
 	}
 
 	return v, nil

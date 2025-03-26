@@ -48,12 +48,25 @@ func TestPayloadCreation(t *testing.T) {
 
 	expected := api.DomainReq{
 		FilterDomains: &api.IncludeExclude{
-			Include: &api.Metadata{
-				Labels: includeLabels,
+			Include: &api.Include{
+				Metadata: &api.Metadata{
+					Labels: includeLabels,
+				},
+			},
+			Exclude: &api.Exclude{
+				Metadata: &api.Metadata{},
+			},
+		},
+		FilterSubdomains: &api.IncludeExclude{
+			Include: &api.Include{
+				Metadata: &api.Metadata{},
+			},
+			Exclude: &api.Exclude{
+				Metadata: &api.Metadata{},
 			},
 		},
 	}
-	filter := DomainFilterDataSourceModel{
+	filter := FullDomainFilterDataSourceModel{
 		DomainLabels: &Filters{
 			Include: basetypes.NewDynamicValue(dynamicLabels.UnderlyingValue()),
 		},
@@ -63,13 +76,26 @@ func TestPayloadCreation(t *testing.T) {
 
 	expected = api.DomainReq{
 		FilterDomains: &api.IncludeExclude{
-			Include: &api.Metadata{
-				Labels:      includeLabels,
-				Annotations: includeAnnotations,
+			Include: &api.Include{
+				Metadata: &api.Metadata{
+					Labels:      includeLabels,
+					Annotations: includeAnnotations,
+				},
+			},
+			Exclude: &api.Exclude{
+				Metadata: &api.Metadata{},
+			},
+		},
+		FilterSubdomains: &api.IncludeExclude{
+			Include: &api.Include{
+				Metadata: &api.Metadata{},
+			},
+			Exclude: &api.Exclude{
+				Metadata: &api.Metadata{},
 			},
 		},
 	}
-	filter = DomainFilterDataSourceModel{
+	filter = FullDomainFilterDataSourceModel{
 		DomainLabels: &Filters{
 			Include: basetypes.NewDynamicValue(dynamicLabels.UnderlyingValue()),
 		},
@@ -82,17 +108,29 @@ func TestPayloadCreation(t *testing.T) {
 
 	expected = api.DomainReq{
 		FilterDomains: &api.IncludeExclude{
-			Include: &api.Metadata{
-				Labels:      includeLabels,
-				Annotations: includeAnnotations,
+			Include: &api.Include{
+				Metadata: &api.Metadata{
+					Labels:      includeLabels,
+					Annotations: includeAnnotations,
+				},
 			},
-			Exclude: &api.Metadata{
-				Labels:      excludeLabels,
-				Annotations: excludeAnnotations,
+			Exclude: &api.Exclude{
+				Metadata: &api.Metadata{
+					Labels:      excludeLabels,
+					Annotations: excludeAnnotations,
+				},
+			},
+		},
+		FilterSubdomains: &api.IncludeExclude{
+			Include: &api.Include{
+				Metadata: &api.Metadata{},
+			},
+			Exclude: &api.Exclude{
+				Metadata: &api.Metadata{},
 			},
 		},
 	}
-	filter = DomainFilterDataSourceModel{
+	filter = FullDomainFilterDataSourceModel{
 		DomainLabels: &Filters{
 			Include: basetypes.NewDynamicValue(dynamicLabels.UnderlyingValue()),
 			Exclude: basetypes.NewDynamicValue(dynamicLabelsExclude.UnderlyingValue()),

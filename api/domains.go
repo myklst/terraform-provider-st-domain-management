@@ -7,7 +7,7 @@ import (
 	"net/url"
 )
 
-func (c *Client) GetDomains(request DomainReq) (resp []byte, err error) {
+func (c *Client) GetDomains(request DomainReq) (resp []*Domain, err error) {
 	path, err := url.JoinPath(c.Endpoint, "domains")
 	if err != nil {
 		return nil, err
@@ -50,10 +50,10 @@ func (c *Client) GetDomains(request DomainReq) (resp []byte, err error) {
 		return nil, err
 	}
 
-	commonResp := commonResponse{}
+	commonResp := DomainResponse{}
 	if err = json.Unmarshal(body, &commonResp); err != nil {
 		return nil, err
 	}
 
-	return commonResp.Dt, nil
+	return commonResp.Domains, nil
 }

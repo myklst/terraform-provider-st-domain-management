@@ -69,14 +69,9 @@ type DomainResponse struct {
 }
 
 type DomainFullResponse struct {
-	DomainsFull []*DomainFull
+	DomainsFull []*DomainFull `json:"dt"`
 }
 
 type AnnotationsResponse struct {
 	Domain Domain `json:"dt"`
-}
-
-type commonResponse struct {
-	Dt  json.RawMessage
-	Err json.RawMessage
 }

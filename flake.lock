@@ -23,16 +23,16 @@
         "nixpkgs-lib": "nixpkgs-lib"
       },
       "locked": {
-        "lastModified": 1740872218,
-        "narHash": "sha256-ZaMw0pdoUKigLpv9HiNDH2Pjnosg7NBYMJlHTIsHEUo=",
-        "rev": "3876f6b87db82f33775b1ef5ea343986105db764",
-        "revCount": 364,
+        "lastModified": 1741352980,
+        "narHash": "sha256-+u2UunDA4Cl5Fci3m7S643HzKmIDAe+fiXrLqYsR2fs=",
+        "rev": "f4330d22f1c5d2ba72d3d22df5597d123fdb60a9",
+        "revCount": 369,
         "type": "tarball",
-        "url": "https://api.flakehub.com/f/pinned/hercules-ci/flake-parts/0.1.364%2Brev-3876f6b87db82f33775b1ef5ea343986105db764/0195555b-eb6b-75c0-8e0d-5ff52a263dff/source.tar.gz"
+        "url": "https://api.flakehub.com/f/pinned/hercules-ci/flake-parts/0.1.369%2Brev-f4330d22f1c5d2ba72d3d22df5597d123fdb60a9/019571ae-2e39-7402-8fe3-37c50d8c08b5/source.tar.gz"
       },
       "original": {
         "type": "tarball",
-        "url": "https://flakehub.com/f/hercules-ci/flake-parts/0.1.%2A.tar.gz"
+        "url": "https://flakehub.com/f/hercules-ci/flake-parts/0.1.350.tar.gz"
       }
     },
     "nixpkgs": {
@@ -53,14 +53,17 @@
     },
     "nixpkgs-lib": {
       "locked": {
-        "lastModified": 1740872140,
-        "narHash": "sha256-3wHafybyRfpUCLoE8M+uPVZinImg3xX+Nm6gEfN3G8I=",
-        "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/6d3702243441165a03f699f64416f635220f4f15.tar.gz"
+        "lastModified": 1742692082,
+        "narHash": "sha256-s3XOULQj7BVO7myY5V4Sob0tRZ7nRpwEOIzXg/MkD/Q=",
+        "owner": "nix-community",
+        "repo": "nixpkgs.lib",
+        "rev": "a09310bc940f245e51b1ffea68731244ca38f2bd",
+        "type": "github"
       },
       "original": {
-        "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/6d3702243441165a03f699f64416f635220f4f15.tar.gz"
+        "owner": "nix-community",
+        "repo": "nixpkgs.lib",
+        "type": "github"
       }
     },
     "nixpkgs_2": {

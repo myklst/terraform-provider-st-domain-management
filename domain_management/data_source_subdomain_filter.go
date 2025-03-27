@@ -102,23 +102,21 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
-	// Create a temporary domain filter data source
-	// so that we can re-use the request.Payload() method.
 	domainRequest := internal.FullDomainFilterDataSourceModel{
 		DomainLabels:      state.DomainLabels,
 		DomainAnnotations: state.DomainAnnotations,
 		SubdomainLabels:   state.SubdomainLabels,
 	}
-	domainsFullBytes, err := d.client.GetDomainsFull(domainRequest.Payload())
+
+	payload, err := domainRequest.Payload()
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read domains, got error: %s", err))
+		resp.Diagnostics.AddError("JSON Error", fmt.Sprintf("Cannot convert filter input to json: %s", err))
 		return
 	}
 
-	domainsFull := []api.DomainFull{}
-	err = json.Unmarshal(domainsFullBytes, &domainsFull)
+	domainsFull, err := d.client.GetDomainsFull(payload)
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read domains, got error: %s", err))
 		return
 	}
 
@@ -131,6 +129,7 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 	}
 
 	domainsFull, diags = processDomainFull(domainsFull)
+	resp.Diagnostics.Append(diags...)
 	if diags.HasError() {
 		return
 	}
@@ -150,8 +149,9 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func processDomainFull(httpResp []api.DomainFull) (domainsFull []api.DomainFull, diags diag.Diagnostics) {
-	domainsFull = make([]api.DomainFull, 0)
+func processDomainFull(httpResp []*api.DomainFull) (domainsFull []*api.DomainFull, diags diag.Diagnostics) {
+	domainsFull = make([]*api.DomainFull, 0)
+
 	for _, domain := range httpResp {
 		subdomains := []api.Subdomain{}
 		for _, subdomain := range domain.Subdomains {
@@ -165,13 +165,13 @@ func processDomainFull(httpResp []api.DomainFull) (domainsFull []api.DomainFull,
 
 		if len(subdomains) == 0 {
 			diags.AddWarning(
-				fmt.Sprintf("%s has no subdomains", domain.Domain),
+				fmt.Sprintf("%s has no subdomains after filtering", domain.Domain),
 				"Please try again with the correct filter",
 			)
 			continue
 		}
 
-		domainFull := api.DomainFull{
+		domainFull := &api.DomainFull{
 			Domain: domain.Domain,
 			Metadata: api.Metadata{
 				Labels:      domain.Metadata.Labels,
@@ -181,5 +181,5 @@ func processDomainFull(httpResp []api.DomainFull) (domainsFull []api.DomainFull,
 		}
 		domainsFull = append(domainsFull, domainFull)
 	}
-	return domainsFull, nil
+	return domainsFull, diags
 }

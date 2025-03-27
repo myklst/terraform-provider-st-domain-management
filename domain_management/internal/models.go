@@ -26,7 +26,7 @@ type DomainFilterDataSourceModel struct {
 	Domains           basetypes.DynamicValue `tfsdk:"domains" json:"domains"`
 }
 
-func (d *DomainFilterDataSourceModel) Payload() api.DomainReq {
+func (d *DomainFilterDataSourceModel) Payload() (api.DomainReq, error) {
 	var err error
 
 	includeLabels := map[string]interface{}{}
@@ -43,14 +43,14 @@ func (d *DomainFilterDataSourceModel) Payload() api.DomainReq {
 		if !d.DomainLabels.Include.IsNull() {
 			includeLabels, err = utils.TFTypesToJSON(d.DomainLabels.Include)
 			if err != nil {
-				panic(err)
+				return api.DomainReq{}, err
 			}
 		}
 
 		if !d.DomainLabels.Exclude.IsNull() {
 			excludeLabels, err = utils.TFTypesToJSON(d.DomainLabels.Exclude)
 			if err != nil {
-				panic(err)
+				return api.DomainReq{}, err
 			}
 		}
 	}
@@ -59,14 +59,14 @@ func (d *DomainFilterDataSourceModel) Payload() api.DomainReq {
 		if !d.DomainAnnotations.Include.IsNull() {
 			includeAnnotations, err = utils.TFTypesToJSON(d.DomainAnnotations.Include)
 			if err != nil {
-				panic(err)
+				return api.DomainReq{}, err
 			}
 		}
 
 		if !d.DomainAnnotations.Exclude.IsNull() {
 			excludeAnnotations, err = utils.TFTypesToJSON(d.DomainAnnotations.Exclude)
 			if err != nil {
-				panic(err)
+				return api.DomainReq{}, err
 			}
 		}
 	}
@@ -87,7 +87,7 @@ func (d *DomainFilterDataSourceModel) Payload() api.DomainReq {
 		},
 	}
 
-	return request
+	return request, nil
 }
 
 type FullDomainFilterDataSourceModel struct {
@@ -99,7 +99,7 @@ type FullDomainFilterDataSourceModel struct {
 }
 
 // Returns a result that is suitable for use in api requests.
-func (d *FullDomainFilterDataSourceModel) Payload() api.DomainReq {
+func (d *FullDomainFilterDataSourceModel) Payload() (api.DomainReq, error) {
 	var err error
 
 	includeLabels := make(map[string]interface{})
@@ -116,14 +116,14 @@ func (d *FullDomainFilterDataSourceModel) Payload() api.DomainReq {
 		if !d.DomainLabels.Include.IsNull() {
 			includeLabels, err = utils.TFTypesToJSON(d.DomainLabels.Include)
 			if err != nil {
-				panic(err)
+				return api.DomainReq{}, err
 			}
 		}
 
 		if !d.DomainLabels.Exclude.IsNull() {
 			excludeLabels, err = utils.TFTypesToJSON(d.DomainLabels.Exclude)
 			if err != nil {
-				panic(err)
+				return api.DomainReq{}, err
 			}
 		}
 	}
@@ -132,14 +132,14 @@ func (d *FullDomainFilterDataSourceModel) Payload() api.DomainReq {
 		if !d.DomainAnnotations.Include.IsNull() {
 			includeAnnotations, err = utils.TFTypesToJSON(d.DomainAnnotations.Include)
 			if err != nil {
-				panic(err)
+				return api.DomainReq{}, err
 			}
 		}
 
 		if !d.DomainAnnotations.Exclude.IsNull() {
 			excludeAnnotations, err = utils.TFTypesToJSON(d.DomainAnnotations.Exclude)
 			if err != nil {
-				panic(err)
+				return api.DomainReq{}, err
 			}
 		}
 	}
@@ -154,14 +154,14 @@ func (d *FullDomainFilterDataSourceModel) Payload() api.DomainReq {
 		if !d.SubdomainLabels.Include.IsNull() {
 			subdomainIncludeLabels, err = utils.TFTypesToJSON(d.SubdomainLabels.Include)
 			if err != nil {
-				panic(err)
+				return api.DomainReq{}, err
 			}
 		}
 
 		if !d.SubdomainLabels.Exclude.IsNull() {
 			subdomainExcludeLabels, err = utils.TFTypesToJSON(d.SubdomainLabels.Exclude)
 			if err != nil {
-				panic(err)
+				return api.DomainReq{}, err
 			}
 		}
 	}
@@ -191,5 +191,5 @@ func (d *FullDomainFilterDataSourceModel) Payload() api.DomainReq {
 		},
 	}
 
-	return request
+	return request, nil
 }

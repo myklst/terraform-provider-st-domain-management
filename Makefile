@@ -8,7 +8,7 @@ testacc:
 # The name of Terraform custom provider.
 CUSTOM_PROVIDER_NAME ?= terraform-provider-st-domain-management
 # The url of Terraform provider.
-CUSTOM_PROVIDER_URL ?= registry.terraform.io/myklst/st-domain-management
+CUSTOM_PROVIDER_URL ?= example.local/myklst/st-domain-management
 
 UNAME := $(shell uname)
 

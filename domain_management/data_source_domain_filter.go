@@ -2,6 +2,7 @@ package domain_management
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -89,7 +90,13 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	domains, err := d.client.GetDomains(state.Payload())
+	payload, err := state.Payload()
+	if err != nil {
+		resp.Diagnostics.AddError("JSON Error", fmt.Sprintf("Cannot convert filter input to json: %s", err))
+		return
+	}
+
+	domains, err := d.client.GetDomains(payload)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read domains: %s", err))
 		return
@@ -102,7 +109,13 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	state.Domains, err = utils.JSONToTerraformDynamicValue(domains)
+	bytes, err := json.Marshal(domains)
+	if err != nil {
+		resp.Diagnostics.AddError(err.Error(), "")
+		return
+	}
+
+	state.Domains, err = utils.JSONToTerraformDynamicValue(bytes)
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return

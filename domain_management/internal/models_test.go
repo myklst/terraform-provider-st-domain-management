@@ -71,7 +71,8 @@ func TestPayloadCreation(t *testing.T) {
 			Include: basetypes.NewDynamicValue(dynamicLabels.UnderlyingValue()),
 		},
 	}
-	payload := filter.Payload()
+	payload, err := filter.Payload()
+	assert.NoError(err)
 	assert.Equal(expected, payload, "Payload without annotations and exclude should match expected.")
 
 	expected = api.DomainReq{
@@ -103,7 +104,8 @@ func TestPayloadCreation(t *testing.T) {
 			Include: basetypes.NewDynamicValue(dynamicAnnotations.UnderlyingValue()),
 		},
 	}
-	payload = filter.Payload()
+	payload, err = filter.Payload()
+	assert.NoError(err)
 	assert.Equal(expected, payload, "Payload without exclude should match expected.")
 
 	expected = api.DomainReq{
@@ -140,6 +142,7 @@ func TestPayloadCreation(t *testing.T) {
 			Exclude: basetypes.NewDynamicValue(dynamicAnnotationsExclude.UnderlyingValue()),
 		},
 	}
-	payload = filter.Payload()
+	payload, err = filter.Payload()
+	assert.NoError(err)
 	assert.Equal(expected, payload, "Payload should match expected.")
 }

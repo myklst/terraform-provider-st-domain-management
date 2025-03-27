@@ -10,6 +10,7 @@ import (
 	"github.com/myklst/terraform-provider-st-domain-management/api"
 	"github.com/myklst/terraform-provider-st-domain-management/utils"
 
+	goPlayground "github.com/go-playground/validator"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -84,24 +85,31 @@ func (r *domainAnnotationsResource) ImportState(ctx context.Context, req resourc
 	tflog.Info(ctx, "[resourceDomainAnnotationImport!]")
 
 	type importStruct struct {
-		Domain      string         `tfsdk:"domain" json:"domain"`
-		Annotations map[string]any `tfsdk:"annotations" json:"annotations"`
+		Domain string   `tfsdk:"domain" json:"domain" validate:"required,hostname_rfc1123"`
+		Keys   []string `tfsdk:"annotations" json:"annotations" validate:"required,min=1"`
 	}
 
 	imported := importStruct{}
 	err := json.Unmarshal([]byte(req.ID), &imported)
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "Cannot marshal import request ID to JSON.")
+		resp.Diagnostics.AddError(err.Error(), "Cannot marshal import request to JSON.")
 		return
 	}
 
-	strAnnotation, err := json.Marshal(slices.Collect(maps.Keys(imported.Annotations)))
+	validate := goPlayground.New()
+	err = validate.Struct(imported)
+	if err != nil {
+		resp.Diagnostics.AddError("Validation error", err.Error())
+		return
+	}
+
+	bytes, err := json.Marshal(imported.Keys)
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return
 	}
 
-	annotationsResp, err := r.client.ReadAnnotations(imported.Domain, strAnnotation)
+	annotationsResp, err := r.client.ReadAnnotations(imported.Domain, bytes)
 	if resp.Diagnostics.HasError() {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return

@@ -50,19 +50,29 @@ func TestPayloadCreation(t *testing.T) {
 		FilterDomains: &api.IncludeExclude{
 			Include: &api.Include{
 				Metadata: &api.Metadata{
-					Labels: includeLabels,
+					Labels:      includeLabels,
+					Annotations: map[string]interface{}{},
 				},
 			},
 			Exclude: &api.Exclude{
-				Metadata: &api.Metadata{},
+				Metadata: &api.Metadata{
+					Labels:      map[string]interface{}{},
+					Annotations: map[string]interface{}{},
+				},
 			},
 		},
 		FilterSubdomains: &api.IncludeExclude{
 			Include: &api.Include{
-				Metadata: &api.Metadata{},
+				Metadata: &api.Metadata{
+					Labels:      map[string]interface{}{},
+					Annotations: nil,
+				},
 			},
 			Exclude: &api.Exclude{
-				Metadata: &api.Metadata{},
+				Metadata: &api.Metadata{
+					Labels:      map[string]interface{}{},
+					Annotations: nil,
+				},
 			},
 		},
 	}
@@ -84,15 +94,24 @@ func TestPayloadCreation(t *testing.T) {
 				},
 			},
 			Exclude: &api.Exclude{
-				Metadata: &api.Metadata{},
+				Metadata: &api.Metadata{
+					Labels:      map[string]interface{}{},
+					Annotations: map[string]interface{}{},
+				},
 			},
 		},
 		FilterSubdomains: &api.IncludeExclude{
 			Include: &api.Include{
-				Metadata: &api.Metadata{},
+				Metadata: &api.Metadata{
+					Labels:      map[string]interface{}{},
+					Annotations: nil,
+				},
 			},
 			Exclude: &api.Exclude{
-				Metadata: &api.Metadata{},
+				Metadata: &api.Metadata{
+					Labels:      map[string]interface{}{},
+					Annotations: nil,
+				},
 			},
 		},
 	}
@@ -125,10 +144,14 @@ func TestPayloadCreation(t *testing.T) {
 		},
 		FilterSubdomains: &api.IncludeExclude{
 			Include: &api.Include{
-				Metadata: &api.Metadata{},
+				Metadata: &api.Metadata{
+					Labels: map[string]interface{}{},
+				},
 			},
 			Exclude: &api.Exclude{
-				Metadata: &api.Metadata{},
+				Metadata: &api.Metadata{
+					Labels: map[string]interface{}{},
+				},
 			},
 		},
 	}

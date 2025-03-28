@@ -34,11 +34,6 @@ func (d *DomainFilterDataSourceModel) Payload() (api.DomainReq, error) {
 	includeAnnotations := map[string]interface{}{}
 	excludeAnnotations := map[string]interface{}{}
 
-	includeLabels = nil
-	excludeLabels = nil
-	includeAnnotations = nil
-	excludeAnnotations = nil
-
 	if d.DomainLabels != nil {
 		if !d.DomainLabels.Include.IsNull() {
 			includeLabels, err = utils.TFTypesToJSON(d.DomainLabels.Include)
@@ -102,15 +97,10 @@ type FullDomainFilterDataSourceModel struct {
 func (d *FullDomainFilterDataSourceModel) Payload() (api.DomainReq, error) {
 	var err error
 
-	includeLabels := make(map[string]interface{})
-	excludeLabels := make(map[string]interface{})
-	includeAnnotations := make(map[string]interface{})
-	excludeAnnotations := make(map[string]interface{})
-
-	includeLabels = nil
-	excludeLabels = nil
-	includeAnnotations = nil
-	excludeAnnotations = nil
+	includeLabels := map[string]interface{}{}
+	excludeLabels := map[string]interface{}{}
+	includeAnnotations := map[string]interface{}{}
+	excludeAnnotations := map[string]interface{}{}
 
 	if d.DomainLabels != nil {
 		if !d.DomainLabels.Include.IsNull() {
@@ -144,11 +134,8 @@ func (d *FullDomainFilterDataSourceModel) Payload() (api.DomainReq, error) {
 		}
 	}
 
-	subdomainIncludeLabels := make(map[string]interface{})
-	subdomainExcludeLabels := make(map[string]interface{})
-
-	subdomainIncludeLabels = nil
-	subdomainExcludeLabels = nil
+	subdomainIncludeLabels := map[string]interface{}{}
+	subdomainExcludeLabels := map[string]interface{}{}
 
 	if d.SubdomainLabels != nil {
 		if !d.SubdomainLabels.Include.IsNull() {

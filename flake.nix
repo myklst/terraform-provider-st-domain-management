@@ -3,8 +3,8 @@
 
   inputs = {
     devshell.url = "github:numtide/devshell";
-    flake-parts.url = "https://flakehub.com/f/hercules-ci/flake-parts/0.1.*.tar.gz";
-    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/=0.1.755230.tar.gz";
+    flake-parts.url = "https://flakehub.com/f/hercules-ci/flake-parts/0.1.350.tar.gz";
+    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1.0.tar.gz";
     systems.url = "github:nix-systems/default";
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
@@ -54,10 +54,8 @@
 
           devshells.default = {
             packages = with pkgs; [
-              delve
-              gopls
               go_1_24
-              go-tools
+              gotools
               terraform
               golangci-lint
               terraform-docs

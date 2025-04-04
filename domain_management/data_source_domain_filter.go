@@ -2,6 +2,7 @@ package domain_management
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -44,7 +45,8 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 					"Domains with labels that match those in exclude will be ignored",
 				}, "\n"),
 				AttributeTypes: internal.FilterAttributes,
-				Required:       true,
+				Required:       false,
+				Optional:       true,
 			},
 			"domain_annotations": schema.ObjectAttribute{
 				Description: strings.Join([]string{
@@ -88,20 +90,32 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	domains, err := d.client.GetDomains(state.Payload())
+	payload, err := state.Payload()
+	if err != nil {
+		resp.Diagnostics.AddError("JSON Error", fmt.Sprintf("Cannot convert filter input to json: %s", err))
+		return
+	}
+
+	domains, err := d.client.GetDomains(payload)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read domains: %s", err))
 		return
 	}
 
 	if len(domains) == 0 {
-		resp.Diagnostics.AddWarning("No domains found. Please try again with the correct domain filters.", "")
+		resp.Diagnostics.AddWarning("No domains found.", "Please try again with the correct domain filters.")
 		state.Domains = types.DynamicNull()
 		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 		return
 	}
 
-	state.Domains, err = utils.JSONToTerraformDynamicValue(domains)
+	bytes, err := json.Marshal(domains)
+	if err != nil {
+		resp.Diagnostics.AddError(err.Error(), "")
+		return
+	}
+
+	state.Domains, err = utils.JSONToTerraformDynamicValue(bytes)
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
 		return

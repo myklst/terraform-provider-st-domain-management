@@ -47,47 +47,116 @@ func TestPayloadCreation(t *testing.T) {
 	require.NoError(err)
 
 	expected := api.DomainReq{
-		Filter: api.Metadata{
-			Labels: includeLabels,
+		FilterDomains: &api.IncludeExclude{
+			Include: &api.Include{
+				Metadata: &api.Metadata{
+					Labels:      includeLabels,
+					Annotations: map[string]interface{}{},
+				},
+			},
+			Exclude: &api.Exclude{
+				Metadata: &api.Metadata{
+					Labels:      map[string]interface{}{},
+					Annotations: map[string]interface{}{},
+				},
+			},
+		},
+		FilterSubdomains: &api.IncludeExclude{
+			Include: &api.Include{
+				Metadata: &api.Metadata{
+					Labels:      map[string]interface{}{},
+					Annotations: nil,
+				},
+			},
+			Exclude: &api.Exclude{
+				Metadata: &api.Metadata{
+					Labels:      map[string]interface{}{},
+					Annotations: nil,
+				},
+			},
 		},
 	}
-	filter := DomainFilterDataSourceModel{
-		DomainLabels: Filters{
+	filter := FullDomainFilterDataSourceModel{
+		DomainLabels: &Filters{
 			Include: basetypes.NewDynamicValue(dynamicLabels.UnderlyingValue()),
 		},
 	}
-	payload := filter.Payload()
+	payload, err := filter.Payload()
+	assert.NoError(err)
 	assert.Equal(expected, payload, "Payload without annotations and exclude should match expected.")
 
 	expected = api.DomainReq{
-		Filter: api.Metadata{
-			Labels:      includeLabels,
-			Annotations: includeAnnotations,
+		FilterDomains: &api.IncludeExclude{
+			Include: &api.Include{
+				Metadata: &api.Metadata{
+					Labels:      includeLabels,
+					Annotations: includeAnnotations,
+				},
+			},
+			Exclude: &api.Exclude{
+				Metadata: &api.Metadata{
+					Labels:      map[string]interface{}{},
+					Annotations: map[string]interface{}{},
+				},
+			},
+		},
+		FilterSubdomains: &api.IncludeExclude{
+			Include: &api.Include{
+				Metadata: &api.Metadata{
+					Labels:      map[string]interface{}{},
+					Annotations: nil,
+				},
+			},
+			Exclude: &api.Exclude{
+				Metadata: &api.Metadata{
+					Labels:      map[string]interface{}{},
+					Annotations: nil,
+				},
+			},
 		},
 	}
-	filter = DomainFilterDataSourceModel{
-		DomainLabels: Filters{
+	filter = FullDomainFilterDataSourceModel{
+		DomainLabels: &Filters{
 			Include: basetypes.NewDynamicValue(dynamicLabels.UnderlyingValue()),
 		},
 		DomainAnnotations: &Filters{
 			Include: basetypes.NewDynamicValue(dynamicAnnotations.UnderlyingValue()),
 		},
 	}
-	payload = filter.Payload()
+	payload, err = filter.Payload()
+	assert.NoError(err)
 	assert.Equal(expected, payload, "Payload without exclude should match expected.")
 
 	expected = api.DomainReq{
-		Filter: api.Metadata{
-			Labels:      includeLabels,
-			Annotations: includeAnnotations,
+		FilterDomains: &api.IncludeExclude{
+			Include: &api.Include{
+				Metadata: &api.Metadata{
+					Labels:      includeLabels,
+					Annotations: includeAnnotations,
+				},
+			},
+			Exclude: &api.Exclude{
+				Metadata: &api.Metadata{
+					Labels:      excludeLabels,
+					Annotations: excludeAnnotations,
+				},
+			},
 		},
-		Exclude: api.Metadata{
-			Labels:      excludeLabels,
-			Annotations: excludeAnnotations,
+		FilterSubdomains: &api.IncludeExclude{
+			Include: &api.Include{
+				Metadata: &api.Metadata{
+					Labels: map[string]interface{}{},
+				},
+			},
+			Exclude: &api.Exclude{
+				Metadata: &api.Metadata{
+					Labels: map[string]interface{}{},
+				},
+			},
 		},
 	}
-	filter = DomainFilterDataSourceModel{
-		DomainLabels: Filters{
+	filter = FullDomainFilterDataSourceModel{
+		DomainLabels: &Filters{
 			Include: basetypes.NewDynamicValue(dynamicLabels.UnderlyingValue()),
 			Exclude: basetypes.NewDynamicValue(dynamicLabelsExclude.UnderlyingValue()),
 		},
@@ -96,6 +165,7 @@ func TestPayloadCreation(t *testing.T) {
 			Exclude: basetypes.NewDynamicValue(dynamicAnnotationsExclude.UnderlyingValue()),
 		},
 	}
-	payload = filter.Payload()
+	payload, err = filter.Payload()
+	assert.NoError(err)
 	assert.Equal(expected, payload, "Payload should match expected.")
 }

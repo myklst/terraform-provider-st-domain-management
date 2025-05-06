@@ -75,8 +75,13 @@ func TestEmptyList(t *testing.T) {
 	bytes, err := json.Marshal(jsonObj)
 	assert.Nil(t, err)
 
-	_, err = JSONToTerraformDynamicValue(bytes)
+	dynamicTFObj, err := JSONToTerraformDynamicValue(bytes)
 	assert.Nil(t, err)
+
+	actualJson, err := TFTypesToJSON(dynamicTFObj)
+	require.NoError(t, err)
+
+	assert.Equal(t, jsonObj, actualJson)
 }
 
 func TestEmptyObject(t *testing.T) {

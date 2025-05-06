@@ -134,25 +134,6 @@ func (d *FullDomainFilterDataSourceModel) Payload() (api.DomainReq, error) {
 		}
 	}
 
-	subdomainIncludeLabels := map[string]interface{}{}
-	subdomainExcludeLabels := map[string]interface{}{}
-
-	if d.SubdomainLabels != nil {
-		if !d.SubdomainLabels.Include.IsNull() {
-			subdomainIncludeLabels, err = utils.TFTypesToJSON(d.SubdomainLabels.Include)
-			if err != nil {
-				return api.DomainReq{}, err
-			}
-		}
-
-		if !d.SubdomainLabels.Exclude.IsNull() {
-			subdomainExcludeLabels, err = utils.TFTypesToJSON(d.SubdomainLabels.Exclude)
-			if err != nil {
-				return api.DomainReq{}, err
-			}
-		}
-	}
-
 	request := api.DomainReq{
 		FilterDomains: &api.IncludeExclude{
 			Include: &api.Include{
@@ -168,14 +149,34 @@ func (d *FullDomainFilterDataSourceModel) Payload() (api.DomainReq, error) {
 				},
 			},
 		},
-		FilterSubdomains: &api.IncludeExclude{
-			Include: &api.Include{Metadata: &api.Metadata{
-				Labels: subdomainIncludeLabels,
-			}},
-			Exclude: &api.Exclude{Metadata: &api.Metadata{
-				Labels: subdomainExcludeLabels,
-			}},
-		},
+	}
+
+	if d.SubdomainLabels != nil {
+		request.FilterSubdomains = &api.IncludeExclude{}
+
+		if !d.SubdomainLabels.Include.IsNull() {
+			subdomainIncludeLabels, err := utils.TFTypesToJSON(d.SubdomainLabels.Include)
+			if err != nil {
+				return api.DomainReq{}, err
+			}
+			request.FilterSubdomains.Include = &api.Include{
+				Metadata: &api.Metadata{
+					Labels: subdomainIncludeLabels,
+				},
+			}
+		}
+
+		if !d.SubdomainLabels.Exclude.IsNull() {
+			subdomainExcludeLabels, err := utils.TFTypesToJSON(d.SubdomainLabels.Exclude)
+			if err != nil {
+				return api.DomainReq{}, err
+			}
+			request.FilterSubdomains.Exclude = &api.Exclude{
+				Metadata: &api.Metadata{
+					Labels: subdomainExcludeLabels,
+				},
+			}
+		}
 	}
 
 	return request, nil

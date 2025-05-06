@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
@@ -122,8 +121,15 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 
 	// Early return if no domains are found.
 	if len(domainsFull) == 0 {
-		resp.Diagnostics.AddWarning("No domains found.", "Please try again with the correct domain filters.")
-		state.Domains = types.DynamicNull()
+		resp.Diagnostics.AddWarning("No domains found.", "Double check your data source input.")
+
+		// Set the state to an empty list if no domains are found
+		emptyList := json.RawMessage([]byte("[]"))
+		state.Domains, err = utils.JSONToTerraformDynamicValue(emptyList)
+		if err != nil {
+			resp.Diagnostics.AddError(err.Error(), "")
+			return
+		}
 		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 		return
 	}

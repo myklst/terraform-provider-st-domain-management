@@ -60,9 +60,10 @@ Each element contains the following attributes:
       - `labels` - JSON key value pair
 
 Labels or annotations can be accessed via dot notation
-e.g. `domains[0].metadata.labels["common/env"]`
+e.g. `domains[0].metadata.labels["common/env"]`.
+
 Labels for each subdomain can also be accessed via dot notation
-e.g. `domains[0].subdomains[0].metadata.labels["feature_a/enable"]`
+e.g. `domains[0].subdomains[0].metadata.labels["feature_a/enable"]`.
 
 <a id="nestedatt--domain_annotations"></a>
 ### Nested Schema for `domain_annotations`

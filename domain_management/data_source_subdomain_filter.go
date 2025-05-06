@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
@@ -43,11 +42,24 @@ func (d *subdomainFilterDataSource) Schema(ctx context.Context, req datasource.S
 			"domains": schema.DynamicAttribute{
 				Description: strings.Join([]string{
 					"List of domains that match the given filter.",
-					"Each domain has a subdomains list.",
-					"Each subdomain in the list has name fqdn, and a labels object that can be accessed via its dot notation.",
-					"e.g. `domains[0].subdomains[0].labels[\"common/env\"]`",
-					"Additionally, each domain has a metadata object that can be accessed via its dot notation.",
-					"e.g. `domains[0].metadata.labels[\"common/env\"]`",
+					"Each element contains the following attributes:",
+					"  - `domain` - The name of this domain",
+					"  - `metadata` - All the metadata of this domain",
+					"    - `labels` - JSON key value pair",
+					"    - `annotations` - JSON key value pair",
+					"  - `subdomains` - List of all the subdomains of this domain. ",
+					"If `subdomain_labels` is not null, only filtered subdomains are present. ",
+					"Each element contains the following attributes:",
+					"    - `name` - The name of this subdomain",
+					"    - `fqdn` - The fully qualified domain name.",
+					"    - `metadata` - All the metadata of this domain",
+					"      - `labels` - JSON key value pair",
+					"",
+					"Labels or annotations can be accessed via dot notation",
+					"e.g. `domains[0].metadata.labels[\"common/env\"]`.",
+					"",
+					"Labels for each subdomain can also be accessed via dot notation",
+					"e.g. `domains[0].subdomains[0].metadata.labels[\"feature_a/enable\"]`.",
 				}, "\n"),
 				Computed: true,
 			},
@@ -122,8 +134,15 @@ func (d *subdomainFilterDataSource) Read(ctx context.Context, req datasource.Rea
 
 	// Early return if no domains are found.
 	if len(domainsFull) == 0 {
-		resp.Diagnostics.AddWarning("No domains found.", "Please try again with the correct domain filters.")
-		state.Domains = types.DynamicNull()
+		resp.Diagnostics.AddWarning("No domains found.", "Double check your data source input.")
+
+		// Set the state to an empty list if no domains are found
+		emptyList := json.RawMessage([]byte("[]"))
+		state.Domains, err = utils.JSONToTerraformDynamicValue(emptyList)
+		if err != nil {
+			resp.Diagnostics.AddError(err.Error(), "")
+			return
+		}
 		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 		return
 	}

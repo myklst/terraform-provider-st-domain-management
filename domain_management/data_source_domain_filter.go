@@ -12,7 +12,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func NewDomainDataSource() datasource.DataSource {
@@ -34,7 +33,13 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 			"domains": schema.DynamicAttribute{
 				Description: strings.Join([]string{
 					"List of domains that match the given filter.",
-					"Each domain has a metadata object that can be accessed via is dot notation.",
+					"Each element contains the following attributes:",
+					"  - `domain` - The name of this domain",
+					"  - `metadata` - All the metadata of this domain",
+					"    - `labels` - JSON key value pair",
+					"    - `annotations` - JSON key value pair",
+					"",
+					"Labels or annotations can be access via dot notation",
 					"e.g. `domains[0].metadata.labels[\"common/env\"]`",
 				}, "\n"),
 				Computed: true,
@@ -102,9 +107,17 @@ func (d *domainFilterDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
+	// Early return if no domains are found.
 	if len(domains) == 0 {
-		resp.Diagnostics.AddWarning("No domains found.", "Please try again with the correct domain filters.")
-		state.Domains = types.DynamicNull()
+		resp.Diagnostics.AddWarning("No domains found.", "Double check your data source input.")
+
+		// Set the state to an empty list if no domains are found
+		emptyList := json.RawMessage([]byte("[]"))
+		state.Domains, err = utils.JSONToTerraformDynamicValue(emptyList)
+		if err != nil {
+			resp.Diagnostics.AddError(err.Error(), "")
+			return
+		}
 		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 		return
 	}

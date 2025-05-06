@@ -46,11 +46,23 @@ data "st-domain-management_subdomain_filter" "example" {
 ### Read-Only
 
 - `domains` (Dynamic) List of domains that match the given filter.
-Each domain has a subdomains list.
-Each subdomain in the list has name fqdn, and a labels object that can be accessed via its dot notation.
-e.g. `domains[0].subdomains[0].labels["common/env"]`
-Additionally, each domain has a metadata object that can be accessed via its dot notation.
+Each element contains the following attributes:
+  - `domain` - The name of this domain
+  - `metadata` - All the metadata of this domain
+    - `labels` - JSON key value pair
+    - `annotations` - JSON key value pair
+  - `subdomains` - List of all the subdomains of this domain. 
+If `subdomain_labels` is not null, only filtered subdomains are present. 
+Each element contains the following attributes:
+    - `name` - The name of this subdomain
+    - `fqdn` - The fully qualified domain name.
+    - `metadata` - All the metadata of this domain
+      - `labels` - JSON key value pair
+
+Labels or annotations can be accessed via dot notation
 e.g. `domains[0].metadata.labels["common/env"]`
+Labels for each subdomain can also be accessed via dot notation
+e.g. `domains[0].subdomains[0].metadata.labels["feature_a/enable"]`
 
 <a id="nestedatt--domain_annotations"></a>
 ### Nested Schema for `domain_annotations`

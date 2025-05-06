@@ -33,7 +33,13 @@ func (d *domainFilterDataSource) Schema(ctx context.Context, req datasource.Sche
 			"domains": schema.DynamicAttribute{
 				Description: strings.Join([]string{
 					"List of domains that match the given filter.",
-					"Each domain has a metadata object that can be accessed via is dot notation.",
+					"Each element contains the following attributes:",
+					"  - `domain` - The name of this domain",
+					"  - `metadata` - All the metadata of this domain",
+					"    - `labels` - JSON key value pair",
+					"    - `annotations` - JSON key value pair",
+					"",
+					"Labels or annotations can be access via dot notation",
 					"e.g. `domains[0].metadata.labels[\"common/env\"]`",
 				}, "\n"),
 				Computed: true,

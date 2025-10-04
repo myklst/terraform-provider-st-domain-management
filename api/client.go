@@ -18,7 +18,7 @@ const (
 	headerContent       = "Content-Type"
 	mediaTypeJSON       = "application/json"
 	mediaTypeURLForm    = "application/x-www-form-urlencoded"
-	rateLimit           = 1 * time.Second
+	rateLimit           = 100 * time.Millisecond
 )
 
 // Client is a Domain Management Backend API client
